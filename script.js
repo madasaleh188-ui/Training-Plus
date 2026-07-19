@@ -71,7 +71,7 @@ document.getElementById('add-student-btn').addEventListener('click', () => {
     
     // Rule Checklist: 9 units long, completely numeric evaluation, positive threshold
     if (cprInput.length !== 9 || isNaN(cprInput) || parseInt(cprInput) <= 0) {
-        alert(currentLang === 'en' ? "CPR must be exactly 9 numbers and greater than 0!" : "يجب أن يتكون الرقم الشخصي من 9 أرقams وأكبر من 0!");
+        alert(currentLang === 'en' ? "CPR must be exactly 9 numbers and greater than 0!" : "يجب أن يتكون الرقم الشخصي من 9 أرقام وأكبر من 0!");
         return;
     }
 
@@ -80,7 +80,6 @@ document.getElementById('add-student-btn').addEventListener('click', () => {
     if (existingStudent) {
         alert(currentLang === 'en' ? `This student already added by ${currentUser}` : `تم إضافة هذا الطالب بالفعل بواسطة ${currentUser}`);
     } else {
-        // Pre-fill target item template schema collection context
         const newStudent = {
             name: "New Student",
             cpr: cprInput,
@@ -111,10 +110,12 @@ function renderStudentDirectory() {
         item.innerHTML = `
             <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
                 <span class="student-name">${student.name}</span>
-                <span>▼</span>
+                <span class="dropdown-icon-v2"><i class="fa-solid fa-angle-down"></i></span>
             </div>
             <div class="student-details hidden">
-                <button class="edit-pin" onclick="alert('Editing enabled for field inputs!')" title="Edit Info">📌</button>
+                <button class="edit-pin-v2" onclick="alert('Editing enabled for fields!')" title="Edit Info">
+                    <i class="fa-solid fa-thumbtack"></i>
+                </button>
                 <div class="grid-form">
                     <label>Full Name: <input type="text" value="${student.name}" onchange="studentDatabase[${index}].name = this.value; renderStudentDirectory()"></label>
                     <label>CPR: <input type="text" value="${student.cpr}" readonly></label>
