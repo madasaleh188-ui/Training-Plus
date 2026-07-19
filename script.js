@@ -1,9 +1,9 @@
 // Local In-Memory State Mocking Management
 let currentUser = "Guest";
 let currentLang = "en";
-const studentDatabase = [
-    { name: "Ali Mansoor", cpr: "020304050", gender: "male", email: "ali@example.com", status: "graduate", courses: "Web Dev 101", ministry: "yes", degree: "bachelor" }
-];
+
+// Starting with a completely empty database array
+const studentDatabase = [];
 
 // 1. Dynamic Live Clock
 function runLiveClock() {
@@ -99,10 +99,24 @@ document.getElementById('add-student-btn').addEventListener('click', () => {
     }
 });
 
+// Delete Student Handler Action
+function deleteStudent(index) {
+    const confirmation = currentLang === 'en' ? "Are you sure you want to delete this student?" : "هل أنت متأكد من حذف هذا الطالب؟";
+    if (confirm(confirmation)) {
+        studentDatabase.splice(index, 1);
+        renderStudentDirectory();
+    }
+}
+
 // 5. Render Accordions Dynamic Engine
 function renderStudentDirectory() {
     const container = document.getElementById('student-container');
     container.innerHTML = "";
+    
+    if (studentDatabase.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#a0aec0; padding:20px;" data-en="No students added yet." data-ar="لم يتم إضافة طلاب بعد.">${currentLang === 'en' ? 'No students added yet.' : 'لم يتم إضافة طلاب بعد.'}</p>`;
+        return;
+    }
     
     studentDatabase.forEach((student, index) => {
         const item = document.createElement('div');
@@ -113,9 +127,16 @@ function renderStudentDirectory() {
                 <span class="dropdown-icon-v2"><i class="fa-solid fa-angle-down"></i></span>
             </div>
             <div class="student-details hidden">
-                <button class="edit-pin-v2" onclick="alert('Editing enabled for fields!')" title="Edit Info">
-                    <i class="fa-solid fa-thumbtack"></i>
-                </button>
+                <!-- Actions Wrapper Container -->
+                <div class="student-actions-wrapper">
+                    <button class="edit-pin-v2" onclick="alert('Editing enabled for fields!')" title="Edit Info">
+                        <i class="fa-solid fa-thumbtack"></i>
+                    </button>
+                    <button class="delete-btn-v2" onclick="deleteStudent(${index})" title="Delete Student">
+                        <i class="fa-solid fa-trash-can" style="color: #e53e3e; font-size: 16px;"></i>
+                    </button>
+                </div>
+                
                 <div class="grid-form">
                     <label>Full Name: <input type="text" value="${student.name}" onchange="studentDatabase[${index}].name = this.value; renderStudentDirectory()"></label>
                     <label>CPR: <input type="text" value="${student.cpr}" readonly></label>
