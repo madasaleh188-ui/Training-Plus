@@ -37,7 +37,7 @@ body {
 .nav-icons button {
     background: none;
     border: none;
-    font-size: 22px;
+    font-size: 20px;
     margin-left: 20px;
     cursor: pointer;
     transition: transform 0.1s ease;
@@ -45,8 +45,15 @@ body {
 .nav-icons button:hover {
     transform: scale(1.1);
 }
-.green-plus {
-    color: var(--accent-plus);
+
+/* Icons styling adjustments */
+.fa-house, .fa-right-from-bracket {
+    color: var(--dark-slate);
+    font-size: 19px;
+}
+.green-plus .fa-plus {
+    color: var(--accent-plus) !important;
+    font-size: 20px;
 }
 
 /* Standardized Content Cards */
@@ -118,6 +125,10 @@ body {
     cursor: pointer;
     font-weight: 600;
 }
+.dropdown-icon-v2 {
+    color: #a0aec0;
+    font-size: 15px;
+}
 .student-details {
     padding: 25px;
     border-top: 1px solid var(--border-color);
@@ -129,14 +140,23 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 18px;
 }
-.edit-pin {
+.edit-pin-v2 {
     position: absolute;
     top: 15px;
     right: 20px;
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 18px;
+    transition: transform 0.2s ease;
+}
+.edit-pin-v2 .fa-thumbtack {
+    color: #cbd5e0;
+    font-size: 16px;
+    transform: rotate(45deg);
+}
+.edit-pin-v2:hover .fa-thumbtack {
+    color: var(--accent-plus);
+    transform: rotate(45deg) scale(1.1);
 }
 
 /* Utilities */
@@ -145,9 +165,9 @@ body {
 .toggle-text { text-align: center; margin-top: 20px; font-size: 14px; }
 .toggle-text a { color: var(--dark-slate); font-weight: bold; text-decoration: none; }
 
-/* RTL Support */
+/* RTL Support Rules */
 body[dir="rtl"] .nav-icons button { margin-left: 0; margin-right: 20px; }
-body[dir="rtl"] .edit-pin { right: auto; left: 20px; }
+body[dir="rtl"] .edit-pin-v2 { right: auto; left: 20px; }
 
 /* Footer */
 .footer {
