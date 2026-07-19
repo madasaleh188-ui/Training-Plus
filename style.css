@@ -1,0 +1,160 @@
+:root {
+    --bg-color: #f3f7f6;
+    --pastel-green: #b9e3de;
+    --pastel-green-hover: #9ecbc5;
+    --dark-slate: #4a5568;
+    --accent-plus: #73c2a4; 
+    --text-color: #2d3748;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Navbar Layout */
+.navbar {
+    background-color: var(--card-bg);
+    padding: 15px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+.brand {
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--dark-slate);
+}
+.nav-icons button {
+    background: none;
+    border: none;
+    font-size: 22px;
+    margin-left: 20px;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+.nav-icons button:hover {
+    transform: scale(1.1);
+}
+.green-plus {
+    color: var(--accent-plus);
+}
+
+/* Standardized Content Cards */
+.view-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 20px;
+}
+.auth-card, .panel-card, .dashboard-card {
+    background: var(--card-bg);
+    width: 100%;
+    border-radius: 14px;
+    padding: 35px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    border: 1px solid var(--border-color);
+}
+.auth-card, .panel-card { max-width: 420px; }
+.dashboard-card { max-width: 850px; align-self: flex-start; }
+
+/* Form Components */
+.form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+.form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--dark-slate);
+}
+.form-group input, .form-group select {
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 15px;
+    background-color: #f8fafc;
+}
+.btn {
+    background-color: var(--pastel-green);
+    color: var(--text-color);
+    border: none;
+    padding: 14px;
+    width: 100%;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.btn:hover {
+    background-color: var(--pastel-green-hover);
+}
+
+/* Accordion Layout */
+.student-item {
+    background: #f8fafc;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+}
+.student-header {
+    padding: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+}
+.student-details {
+    padding: 25px;
+    border-top: 1px solid var(--border-color);
+    background: #ffffff;
+    position: relative;
+}
+.grid-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+.edit-pin {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+/* Utilities */
+.hidden { display: none !important; }
+.instruction-text { font-size: 13px; color: #718096; margin-bottom: 20px; }
+.toggle-text { text-align: center; margin-top: 20px; font-size: 14px; }
+.toggle-text a { color: var(--dark-slate); font-weight: bold; text-decoration: none; }
+
+/* RTL Support */
+body[dir="rtl"] .nav-icons button { margin-left: 0; margin-right: 20px; }
+body[dir="rtl"] .edit-pin { right: auto; left: 20px; }
+
+/* Footer */
+.footer {
+    background-color: var(--card-bg);
+    text-align: center;
+    padding: 15px;
+    font-size: 13px;
+    color: #718096;
+    border-top: 1px solid var(--border-color);
+}
