@@ -20,7 +20,6 @@ body {
     min-height: 100vh;
 }
 
-/* Navbar Layout */
 .navbar {
     background-color: var(--card-bg);
     padding: 15px 40px;
@@ -37,26 +36,36 @@ body {
 .nav-icons button {
     background: none;
     border: none;
-    font-size: 20px;
+    font-size: 18px;
     margin-left: 20px;
     cursor: pointer;
-    transition: transform 0.1s ease;
-}
-.nav-icons button:hover {
-    transform: scale(1.1);
-}
-
-/* Icons styling adjustments */
-.fa-house, .fa-right-from-bracket {
     color: var(--dark-slate);
-    font-size: 19px;
 }
-.green-plus .fa-plus {
-    color: var(--accent-plus) !important;
-    font-size: 20px;
+#lang-toggle {
+    font-weight: bold;
+    font-size: 15px;
 }
 
-/* Standardized Content Cards */
+.dashboard-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.green-plus-btn {
+    background-color: #e8f5e9;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: var(--accent-plus);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .view-container {
     flex: 1;
     display: flex;
@@ -75,7 +84,6 @@ body {
 .auth-card, .panel-card { max-width: 420px; }
 .dashboard-card { max-width: 850px; align-self: flex-start; }
 
-/* Form Components */
 .form-group {
     margin-bottom: 20px;
     display: flex;
@@ -104,13 +112,11 @@ body {
     font-weight: 700;
     font-size: 16px;
     cursor: pointer;
-    transition: background 0.2s ease;
 }
 .btn:hover {
     background-color: var(--pastel-green-hover);
 }
 
-/* Accordion Layout */
 .student-item {
     background: #f8fafc;
     border-radius: 10px;
@@ -141,7 +147,6 @@ body {
     gap: 18px;
 }
 
-/* Header action container (Pin + Trash) */
 .student-actions-wrapper {
     position: absolute;
     top: 15px;
@@ -150,44 +155,30 @@ body {
     gap: 15px;
     align-items: center;
 }
-
 .edit-pin-v2 {
     background: none;
     border: none;
     cursor: pointer;
-    transition: transform 0.2s ease;
 }
 .edit-pin-v2 .fa-thumbtack {
     color: #cbd5e0;
     font-size: 16px;
     transform: rotate(45deg);
 }
-.edit-pin-v2:hover .fa-thumbtack {
-    color: var(--accent-plus);
-    transform: rotate(45deg) scale(1.1);
-}
-
 .delete-btn-v2 {
     background: none;
     border: none;
     cursor: pointer;
-    transition: transform 0.2s ease;
-}
-.delete-btn-v2:hover {
-    transform: scale(1.1);
 }
 
-/* Utilities */
 .hidden { display: none !important; }
 .instruction-text { font-size: 13px; color: #718096; margin-bottom: 20px; }
 .toggle-text { text-align: center; margin-top: 20px; font-size: 14px; }
 .toggle-text a { color: var(--dark-slate); font-weight: bold; text-decoration: none; }
 
-/* RTL Support Rules */
 body[dir="rtl"] .nav-icons button { margin-left: 0; margin-right: 20px; }
 body[dir="rtl"] .student-actions-wrapper { right: auto; left: 20px; }
 
-/* Footer */
 .footer {
     background-color: var(--card-bg);
     text-align: center;
