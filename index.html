@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Training Plus</title>
+    <!-- Font Awesome Kit for Modern Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,10 +14,16 @@
     <header class="navbar hidden" id="main-nav">
         <div class="brand">Training Plus</div>
         <div class="nav-icons">
-            <button id="nav-home-btn" title="Home">🏠</button>
-            <button id="nav-add-btn" class="green-plus" title="Add Student">➕</button>
+            <button id="nav-home-btn" title="Home">
+                <i class="fa-solid fa-house"></i>
+            </button>
+            <button id="nav-add-btn" class="green-plus" title="Add Student">
+                <i class="fa-solid fa-plus"></i>
+            </button>
             <button id="lang-toggle" title="Change Language">E/AR</button>
-            <button id="nav-logout-btn" title="Sign Out">👤</button>
+            <button id="nav-logout-btn" title="Sign Out">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
         </div>
     </header>
 
@@ -26,7 +34,7 @@
             <form id="auth-form">
                 <div class="form-group signup-only hidden">
                     <label data-en="Username" data-ar="اسم المستخدم">Username</label>
-                    <input type="text" id="auth-username" placeholder="e.g. mada_saleh">
+                    <input type="text" id="auth-username" placeholder="e.g. john_doe">
                 </div>
                 <div class="form-group">
                     <label data-en="Email" data-ar="البريد الإلكتروني">Email</label>
