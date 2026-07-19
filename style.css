@@ -140,10 +140,18 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 18px;
 }
-.edit-pin-v2 {
+
+/* Header action container (Pin + Trash) */
+.student-actions-wrapper {
     position: absolute;
     top: 15px;
     right: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.edit-pin-v2 {
     background: none;
     border: none;
     cursor: pointer;
@@ -159,6 +167,16 @@ body {
     transform: rotate(45deg) scale(1.1);
 }
 
+.delete-btn-v2 {
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+.delete-btn-v2:hover {
+    transform: scale(1.1);
+}
+
 /* Utilities */
 .hidden { display: none !important; }
 .instruction-text { font-size: 13px; color: #718096; margin-bottom: 20px; }
@@ -167,7 +185,7 @@ body {
 
 /* RTL Support Rules */
 body[dir="rtl"] .nav-icons button { margin-left: 0; margin-right: 20px; }
-body[dir="rtl"] .edit-pin-v2 { right: auto; left: 20px; }
+body[dir="rtl"] .student-actions-wrapper { right: auto; left: 20px; }
 
 /* Footer */
 .footer {
