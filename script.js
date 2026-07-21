@@ -61,7 +61,7 @@ document.getElementById('auth-form').addEventListener('submit', (e) => {
     showView('view-cpr');
 });
 
-// Precise Alert Constraints Matches
+// CPR Check & Validation
 document.getElementById('add-student-btn').addEventListener('click', () => {
     const cprInput = document.getElementById('cpr-input').value.trim();
     
@@ -72,7 +72,6 @@ document.getElementById('add-student-btn').addEventListener('click', () => {
 
     const existingStudent = studentDatabase.find(s => s.cpr === cprInput);
     if (existingStudent) {
-        // EXACT REQUIRED STRING MATCH
         alert("this student orady added by " + currentUser + " ");
     } else {
         const newStudent = {
@@ -83,10 +82,10 @@ document.getElementById('add-student-btn').addEventListener('click', () => {
             status: "student",
             courses: "",
             ministry: "no",
-            degree: "high-school"
+            degree: "high-school",
+            photo: ""
         };
         studentDatabase.push(newStudent);
-        // EXACT REQUIRED STRING MATCH
         alert("the student addes succussfly ");
         
         renderStudentDirectory();
@@ -102,7 +101,20 @@ function deleteStudent(index) {
     }
 }
 
-// Render Engine mapping literal assignment labels
+// Live Image Preview Function
+function previewImage(event, index) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById(`preview-${index}`).src = e.target.result;
+            studentDatabase[index].photo = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Render Engine
 function renderStudentDirectory() {
     const container = document.getElementById('student-container');
     container.innerHTML = "";
@@ -125,10 +137,19 @@ function renderStudentDirectory() {
                     <button class="edit-pin-v2" title="Edit Info"><i class="fa-solid fa-thumbtack"></i></button>
                     <button class="delete-btn-v2" onclick="deleteStudent(${index})" title="Delete"><i class="fa-solid fa-trash-can" style="color: #e53e3e;"></i></button>
                 </div>
+
+                <!-- Student Photo Placeholder -->
+                <div class="student-photo-container">
+                    <img id="preview-${index}" src="${student.photo || 'https://via.placeholder.com/90?text=Photo'}" alt="Student Photo" class="student-photo-img">
+                </div>
                 
                 <div class="grid-form">
                     <label>full name: <input type="text" value="${student.name}" onchange="studentDatabase[${index}].name = this.value; renderStudentDirectory()"></label>
                     <label>cpr: <input type="text" value="${student.cpr}" readonly></label>
+                    
+                    <!-- Image Input Field -->
+                    <label>image: <input type="file" accept="image/*" onchange="previewImage(event, ${index})"></label>
+                    
                     <label>gander: 
                         <select>
                             <option value="male" ${student.gender === 'male' ? 'selected' : ''}>male</option>
