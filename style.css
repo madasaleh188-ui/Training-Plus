@@ -141,6 +141,22 @@ body {
     background: #ffffff;
     position: relative;
 }
+
+/* Student Photo Preview Styling */
+.student-photo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+.student-photo-img {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+    background-color: #edf2f7;
+}
+
 .grid-form {
     display: grid;
     grid-template-columns: 1fr 1fr;
