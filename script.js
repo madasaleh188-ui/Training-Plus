@@ -1,8 +1,11 @@
+// Local In-Memory State Mocking Management
 let currentUser = "Guest";
 let currentLang = "en";
+
+// Starting with a completely empty database array
 const studentDatabase = [];
 
-// Live Clock System
+// 1. Dynamic Live Clock
 function runLiveClock() {
     const clock = document.getElementById('live-clock');
     if (!clock) return;
@@ -15,7 +18,7 @@ function runLiveClock() {
     setInterval(update, 1000);
 }
 
-// View Routing Engine
+// 2. Front-end Navigation Engine
 function showView(viewId) {
     document.getElementById('view-auth').classList.add('hidden');
     document.getElementById('view-cpr').classList.add('hidden');
@@ -28,7 +31,7 @@ function showView(viewId) {
     }
 }
 
-// Authentication Toggle Form Context
+// 3. Auth Toggle (Sign In / Create Account)
 const authToggle = document.getElementById('auth-toggle');
 let isSignUpMode = false;
 authToggle.addEventListener('click', (e) => {
@@ -54,6 +57,7 @@ authToggle.addEventListener('click', (e) => {
     updateLanguageLayout();
 });
 
+// Auth Submit Form Handling
 document.getElementById('auth-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const usernameInput = document.getElementById('auth-username').value.trim();
@@ -61,19 +65,20 @@ document.getElementById('auth-form').addEventListener('submit', (e) => {
     showView('view-cpr');
 });
 
-// Precise Alert Constraints Matches
+// 4. CPR Form Processing & Validations
 document.getElementById('add-student-btn').addEventListener('click', () => {
     const cprInput = document.getElementById('cpr-input').value.trim();
     
+    // Rule Checklist: 9 units long, completely numeric evaluation, positive threshold
     if (cprInput.length !== 9 || isNaN(cprInput) || parseInt(cprInput) <= 0) {
-        alert("CPR must be exactly 9 numbers and greater than 0!");
+        alert(currentLang === 'en' ? "CPR must be exactly 9 numbers and greater than 0!" : "يجب أن يتكون الرقم الشخصي من 9 أرقام وأكبر من 0!");
         return;
     }
 
+    // Uniqueness constraint checking
     const existingStudent = studentDatabase.find(s => s.cpr === cprInput);
     if (existingStudent) {
-        // EXACT REQUIRED STRING MATCH
-        alert("this student orady added by " + currentUser + " ");
+        alert(currentLang === 'en' ? `This student already added by ${currentUser}` : `تم إضافة هذا الطالب بالفعل بواسطة ${currentUser}`);
     } else {
         const newStudent = {
             name: "New Student",
@@ -86,8 +91,7 @@ document.getElementById('add-student-btn').addEventListener('click', () => {
             degree: "high-school"
         };
         studentDatabase.push(newStudent);
-        // EXACT REQUIRED STRING MATCH
-        alert("the student addes succussfly ");
+        alert(currentLang === 'en' ? "The student added successfully" : "تم إضافة الطالب بنجاح");
         
         renderStudentDirectory();
         showView('view-home');
@@ -95,20 +99,22 @@ document.getElementById('add-student-btn').addEventListener('click', () => {
     }
 });
 
+// Delete Student Handler Action
 function deleteStudent(index) {
-    if (confirm("Delete this entry?")) {
+    const confirmation = currentLang === 'en' ? "Are you sure you want to delete this student?" : "هل أنت متأكد من حذف هذا الطالب؟";
+    if (confirm(confirmation)) {
         studentDatabase.splice(index, 1);
         renderStudentDirectory();
     }
 }
 
-// Render Engine mapping literal assignment labels
+// 5. Render Accordions Dynamic Engine
 function renderStudentDirectory() {
     const container = document.getElementById('student-container');
     container.innerHTML = "";
     
     if (studentDatabase.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color:#a0aec0; padding:20px;">No records found.</p>`;
+        container.innerHTML = `<p style="text-align:center; color:#a0aec0; padding:20px;" data-en="No students added yet." data-ar="لم يتم إضافة طلاب بعد.">${currentLang === 'en' ? 'No students added yet.' : 'لم يتم إضافة طلاب بعد.'}</p>`;
         return;
     }
     
@@ -121,43 +127,48 @@ function renderStudentDirectory() {
                 <span class="dropdown-icon-v2"><i class="fa-solid fa-angle-down"></i></span>
             </div>
             <div class="student-details hidden">
+                <!-- Actions Wrapper Container -->
                 <div class="student-actions-wrapper">
-                    <button class="edit-pin-v2" title="Edit Info"><i class="fa-solid fa-thumbtack"></i></button>
-                    <button class="delete-btn-v2" onclick="deleteStudent(${index})" title="Delete"><i class="fa-solid fa-trash-can" style="color: #e53e3e;"></i></button>
+                    <button class="edit-pin-v2" onclick="alert('Editing enabled for fields!')" title="Edit Info">
+                        <i class="fa-solid fa-thumbtack"></i>
+                    </button>
+                    <button class="delete-btn-v2" onclick="deleteStudent(${index})" title="Delete Student">
+                        <i class="fa-solid fa-trash-can" style="color: #e53e3e; font-size: 16px;"></i>
+                    </button>
                 </div>
                 
                 <div class="grid-form">
-                    <label>full name: <input type="text" value="${student.name}" onchange="studentDatabase[${index}].name = this.value; renderStudentDirectory()"></label>
-                    <label>cpr: <input type="text" value="${student.cpr}" readonly></label>
-                    <label>gander: 
+                    <label>Full Name: <input type="text" value="${student.name}" onchange="studentDatabase[${index}].name = this.value; renderStudentDirectory()"></label>
+                    <label>CPR: <input type="text" value="${student.cpr}" readonly></label>
+                    <label>Gender: 
                         <select>
-                            <option value="male" ${student.gender === 'male' ? 'selected' : ''}>male</option>
-                            <option value="female" ${student.gender === 'female' ? 'selected' : ''}>femal</option>
+                            <option value="male" ${student.gender === 'male' ? 'selected' : ''}>Male</option>
+                            <option value="female" ${student.gender === 'female' ? 'selected' : ''}>Female</option>
                         </select>
                     </label>
-                    <label>email: <input type="email" value="${student.email}"></label>
-                    <label>cv: <input type="file" accept=".pdf"></label>
-                    <label>stat: 
+                    <label>Email: <input type="email" value="${student.email}"></label>
+                    <label>CV (PDF): <input type="file" accept=".pdf"></label>
+                    <label>Status: 
                         <select>
-                            <option value="student" ${student.status === 'student' ? 'selected' : ''}>student</option>
-                            <option value="graduate" ${student.status === 'graduate' ? 'selected' : ''}>gradouate</option>
+                            <option value="student" ${student.status === 'student' ? 'selected' : ''}>Student</option>
+                            <option value="graduate" ${student.status === 'graduate' ? 'selected' : ''}>Graduate</option>
                         </select>
                     </label>
-                    <label>courses: <input type="text" value="${student.courses}"></label>
-                    <label>with the ministiry of labur: 
+                    <label>Courses: <input type="text" value="${student.courses}"></label>
+                    <label>Ministry of Labour: 
                         <select>
-                            <option value="yes" ${student.ministry === 'yes' ? 'selected' : ''}>yes</option>
-                            <option value="no" ${student.ministry === 'no' ? 'selected' : ''}>no</option>
+                            <option value="yes" ${student.ministry === 'yes' ? 'selected' : ''}>Yes</option>
+                            <option value="no" ${student.ministry === 'no' ? 'selected' : ''}>No</option>
                         </select>
                     </label>
-                    <label>degree: 
+                    <label>Degree: 
                         <select>
-                            <option value="high-school" ${student.degree === 'high-school' ? 'selected' : ''}>high school</option>
-                            <option value="diploma" ${student.degree === 'diploma' ? 'selected' : ''}>doploma</option>
-                            <option value="bachelor" ${student.degree === 'bachelor' ? 'selected' : ''}>bacholarios</option>
-                            <option value="master" ${student.degree === 'master' ? 'selected' : ''}>master</option>
-                            <option value="phd" ${student.degree === 'phd' ? 'selected' : ''}>phd</option>
-                            <option value="other" ${student.degree === 'other' ? 'selected' : ''}>other</option>
+                            <option value="high-school" ${student.degree === 'high-school' ? 'selected' : ''}>High School</option>
+                            <option value="diploma" ${student.degree === 'diploma' ? 'selected' : ''}>Diploma</option>
+                            <option value="bachelor" ${student.degree === 'bachelor' ? 'selected' : ''}>Bachelor</option>
+                            <option value="master" ${student.degree === 'master' ? 'selected' : ''}>Master</option>
+                            <option value="phd" ${student.degree === 'phd' ? 'selected' : ''}>PhD</option>
+                            <option value="other" ${student.degree === 'other' ? 'selected' : ''}>Other</option>
                         </select>
                     </label>
                 </div>
@@ -167,15 +178,15 @@ function renderStudentDirectory() {
     });
 }
 
-// Navigation Actions
+// 6. Navigation Actions Mapping
 document.getElementById('nav-home-btn').addEventListener('click', () => showView('view-home'));
-document.getElementById('page-add-btn').addEventListener('click', () => showView('view-cpr'));
+document.getElementById('nav-add-btn').addEventListener('click', () => showView('view-cpr'));
 document.getElementById('nav-logout-btn').addEventListener('click', () => {
     document.getElementById('auth-form').reset();
     showView('view-auth');
 });
 
-// Language Switch
+// 7. Multi-language Translator Framework Toggle Switch
 function updateLanguageLayout() {
     document.querySelectorAll('[data-en]').forEach(el => {
         el.textContent = el.getAttribute(`data-${currentLang}`);
@@ -189,6 +200,7 @@ document.getElementById('lang-toggle').addEventListener('click', () => {
     updateLanguageLayout();
 });
 
+// Launch Systems Prerender Initializations
 window.addEventListener('DOMContentLoaded', () => {
     runLiveClock();
     renderStudentDirectory();
