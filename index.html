@@ -4,30 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Training Plus</title>
-    <!-- Font Awesome Kit for Modern Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- 1. HEADER (Hidden on Login Screen, Shown on CPR & Home) -->
+    <!-- NAVBAR (HEADER WITH HOME, E/AR, AND ACCOUNT ICONS) -->
     <header class="navbar hidden" id="main-nav">
         <div class="brand">Training Plus</div>
         <div class="nav-icons">
-            <button id="nav-home-btn" title="Home">
-                <i class="fa-solid fa-house"></i>
-            </button>
-            <button id="nav-add-btn" class="green-plus" title="Add Student">
-                <i class="fa-solid fa-plus"></i>
-            </button>
+            <button id="nav-home-btn" title="Home">🏠</button>
             <button id="lang-toggle" title="Change Language">E/AR</button>
-            <button id="nav-logout-btn" title="Sign Out">
-                <i class="fa-solid fa-right-from-bracket"></i>
-            </button>
+            <button id="nav-logout-btn" title="Account">👤</button>
         </div>
     </header>
 
-    <!-- 2. AUTHENTICATION VIEW -->
+    <!-- 1. CREATE ACCOUNT / SIGN IN VIEW -->
     <section id="view-auth" class="view-container">
         <div class="auth-card">
             <h2 id="auth-title" data-en="Sign In" data-ar="تسجيل الدخول">Sign In</h2>
@@ -53,13 +44,11 @@
         </div>
     </section>
 
-    <!-- 3. CPR CHECK VIEW -->
+    <!-- 2. CPR CHECK VIEW -->
     <section id="view-cpr" class="view-container hidden">
         <div class="panel-card">
             <h3 data-en="Enter Student CPR" data-ar="أدخل الرقم الشخصي للطالب">Enter Student CPR</h3>
-            <p class="instruction-text" data-en="CPR must be exactly 9 positive numbers and unique." data-ar="الرقم الشخصي يجب أن يكون 9 أرقام موجبة وفريدة.">
-                CPR must be exactly 9 positive numbers and unique.
-            </p>
+            <p class="instruction-text" id="cpr-instructions">cpr only exapt 9 numbers not less than 0 and its uniqe</p>
             <form id="cpr-form">
                 <div class="form-group">
                     <input type="number" id="cpr-input" placeholder="e.g. 123456789" required>
@@ -69,17 +58,19 @@
         </div>
     </section>
 
-    <!-- 4. HOME DASHBOARD VIEW -->
+    <!-- 3. HOME DASHBOARD VIEW -->
     <section id="view-home" class="view-container hidden">
         <div class="dashboard-card">
-            <h2 data-en="Student Directory" data-ar="دليل الطلاب">Student Directory</h2>
-            <div class="student-list" id="student-container">
-                <!-- Dynamically generated students will appear here -->
+            <div class="dashboard-header-row">
+                <h2 data-en="Student Directory" data-ar="دليل الطلاب">Student Directory</h2>
+                <!-- GREEN PLUS ICON AT THE TOP OF THE HOME PAGE -->
+                <button id="page-add-btn" class="green-plus-btn" title="Add Student">➕</button>
             </div>
+            <div class="student-list" id="student-container"></div>
         </div>
     </section>
 
-    <!-- 5. LIVE TIME AND DAY FOOTER -->
+    <!-- FOOTER WITH LIVE DAY & TIME -->
     <footer class="footer">
         <span id="live-clock">Loading live time...</span>
     </footer>
