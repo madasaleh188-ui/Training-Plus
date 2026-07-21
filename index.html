@@ -1,34 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Training Plus - Sign In</title>
+    <title>Training Plus</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="auth-container">
-        <h2 id="auth-title">Sign In</h2>
-        <form id="auth-form" action="cpr.html" method="GET">
-            <div class="form-group signup-only hidden">
-                <label>Username</label>
-                <input type="text" id="username" name="username" placeholder="e.g. john_doe">
+
+    <!-- NAVBAR WITH HOME, E/AR, AND ACCOUNT ICON -->
+    <header class="navbar hidden" id="main-nav">
+        <div class="brand">Training Plus</div>
+        <div class="nav-icons">
+            <button id="nav-home-btn" title="Home"><i class="fa-solid fa-house"></i></button>
+            <button id="lang-toggle" title="Change Language">E/AR</button>
+            <button id="nav-logout-btn" title="Account"><i class="fa-solid fa-user"></i></button>
+        </div>
+    </header>
+
+    <!-- AUTHENTICATION VIEW -->
+    <section id="view-auth" class="view-container">
+        <div class="auth-card">
+            <h2 id="auth-title" data-en="Sign In" data-ar="تسجيل الدخول">Sign In</h2>
+            <form id="auth-form">
+                <div class="form-group signup-only hidden">
+                    <label data-en="Username" data-ar="اسم المستخدم">Username</label>
+                    <input type="text" id="auth-username" placeholder="e.g. john_doe">
+                </div>
+                <div class="form-group">
+                    <label data-en="Email" data-ar="البريد الإلكتروني">Email</label>
+                    <input type="email" id="auth-email" required placeholder="name@example.com">
+                </div>
+                <div class="form-group">
+                    <label data-en="Password" data-ar="كلمة المرور">Password</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" id="btn-submit" class="btn" data-en="Sign In" data-ar="تسجيل الدخول">Sign In</button>
+            </form>
+            <p class="toggle-text">
+                <span id="txt-toggle" data-en="Don't have an account?" data-ar="ليس لديك حساب؟">Don't have an account?</span>
+                <a href="#" id="auth-toggle" data-en="Create Account" data-ar="إنشاء حساب">Create Account</a>
+            </p>
+        </div>
+    </section>
+
+    <!-- CPR CHECK VIEW -->
+    <section id="view-cpr" class="view-container hidden">
+        <div class="panel-card">
+            <h3 data-en="Enter Student CPR" data-ar="أدخل الرقم الشخصي للطالب">Enter Student CPR</h3>
+            <p class="instruction-text" id="cpr-instructions">cpr only exapt 9 numbers not less than 0 and its uniqe</p>
+            <form id="cpr-form">
+                <div class="form-group">
+                    <input type="number" id="cpr-input" placeholder="e.g. 123456789" required>
+                </div>
+                <button type="button" id="add-student-btn" class="btn" data-en="Add Student" data-ar="إضافة طالب">Add Student</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- HOME DASHBOARD VIEW -->
+    <section id="view-home" class="view-container hidden">
+        <div class="dashboard-card">
+            <div class="dashboard-header-row">
+                <h2 data-en="Student Directory" data-ar="دليل الطلاب">Student Directory</h2>
+                <!-- GREEN PLUS ICON AT THE TOP OF THE HOME PAGE -->
+                <button id="page-add-btn" class="green-plus-btn" title="Add Student"><i class="fa-solid fa-plus"></i></button>
             </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="email" name="email" required placeholder="name@example.com">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="password" name="password" required placeholder="••••••••">
-            </div>
-            <button type="submit" id="btn-submit" class="btn">Sign In</button>
-        </form>
-        <p class="toggle-text">
-            <span id="txt-toggle">Don't have an account?</span>
-            <a href="#" id="auth-toggle">Create Account</a>
-        </p>
-    </div>
+            <div class="student-list" id="student-container"></div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <span id="live-clock">Loading live time...</span>
+    </footer>
+
     <script src="script.js"></script>
 </body>
 </html>
