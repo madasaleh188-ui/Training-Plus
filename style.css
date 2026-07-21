@@ -33,18 +33,17 @@ body {
     font-size: 20px;
     color: var(--dark-slate);
 }
-.nav-icons {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-.nav-icons a, .nav-icons button {
+.nav-icons button {
     background: none;
     border: none;
     font-size: 18px;
+    margin-left: 20px;
     cursor: pointer;
-    text-decoration: none;
     color: var(--dark-slate);
+}
+#lang-toggle {
+    font-weight: bold;
+    font-size: 15px;
 }
 
 .dashboard-header-row {
@@ -54,30 +53,36 @@ body {
     margin-bottom: 20px;
 }
 .green-plus-btn {
-    text-decoration: none;
-    font-size: 20px;
+    background-color: #e8f5e9;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     color: var(--accent-plus);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.content-container {
+.view-container {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 30px 20px;
 }
-
-.auth-container, .panel-card, .dashboard-card {
+.auth-card, .panel-card, .dashboard-card {
     background: var(--card-bg);
     width: 100%;
     border-radius: 14px;
     padding: 35px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.03);
     border: 1px solid var(--border-color);
-    box-sizing: border-box;
 }
-.auth-container, .panel-card { max-width: 420px; margin: auto; }
-.dashboard-card { max-width: 850px; }
+.auth-card, .panel-card { max-width: 420px; }
+.dashboard-card { max-width: 850px; align-self: flex-start; }
 
 .form-group {
     margin-bottom: 20px;
@@ -97,7 +102,6 @@ body {
     font-size: 15px;
     background-color: #f8fafc;
 }
-
 .btn {
     background-color: var(--pastel-green);
     color: var(--text-color);
@@ -127,37 +131,20 @@ body {
     cursor: pointer;
     font-weight: 600;
 }
+.dropdown-icon-v2 {
+    color: #a0aec0;
+    font-size: 15px;
+}
 .student-details {
     padding: 25px;
     border-top: 1px solid var(--border-color);
     background: #ffffff;
     position: relative;
 }
-
-.student-photo-container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 20px;
-}
-.student-photo-img {
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--border-color);
-    background-color: #edf2f7;
-}
-
 .grid-form {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 18px;
-}
-.grid-form label {
-    display: flex;
-    flex-direction: column;
-    font-size: 14px;
-    font-weight: 600;
 }
 
 .student-actions-wrapper {
@@ -166,18 +153,31 @@ body {
     right: 20px;
     display: flex;
     gap: 15px;
+    align-items: center;
 }
-.action-btn {
+.edit-pin-v2 {
     background: none;
     border: none;
     cursor: pointer;
+}
+.edit-pin-v2 .fa-thumbtack {
+    color: #cbd5e0;
     font-size: 16px;
+    transform: rotate(45deg);
+}
+.delete-btn-v2 {
+    background: none;
+    border: none;
+    cursor: pointer;
 }
 
 .hidden { display: none !important; }
 .instruction-text { font-size: 13px; color: #718096; margin-bottom: 20px; }
 .toggle-text { text-align: center; margin-top: 20px; font-size: 14px; }
 .toggle-text a { color: var(--dark-slate); font-weight: bold; text-decoration: none; }
+
+body[dir="rtl"] .nav-icons button { margin-left: 0; margin-right: 20px; }
+body[dir="rtl"] .student-actions-wrapper { right: auto; left: 20px; }
 
 .footer {
     background-color: var(--card-bg);
