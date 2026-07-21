@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Plus - CPR Check</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="brand">Training Plus</div>
+        <div class="nav-icons">
+            <a href="home.html" title="Home">🏠</a>
+            <button id="lang-toggle" type="button" title="Change Language">E/AR</button>
+            <a href="index.html" title="Account">👤</a>
+        </div>
+    </header>
+
+    <main class="content-container">
+        <div class="panel-card">
+            <h3>Enter Student CPR</h3>
+            <p class="instruction-text">cpr only exapt 9 numbers not less than 0 and its uniqe</p>
+            <form id="cpr-form">
+                <div class="form-group">
+                    <input type="number" id="cpr-input" placeholder="e.g. 123456789" required>
+                </div>
+                <button type="button" id="add-student-btn" class="btn">Add Student</button>
+            </form>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <span id="live-clock">Loading live time...</span>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
