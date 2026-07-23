@@ -2,7 +2,7 @@ let currentUser = "Guest";
 let currentLang = "en";
 const studentDatabase = [];
 
-// Live Clock System
+// Live Clock System "
 function runLiveClock() {
     const clock = document.getElementById('live-clock');
     if (!clock) return;
@@ -14,6 +14,7 @@ function runLiveClock() {
     update();
     setInterval(update, 1000);
 }
+//"
 
 // Single-Page View Router Engine
 function showView(viewId) {
