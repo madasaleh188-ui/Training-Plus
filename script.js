@@ -125,7 +125,6 @@ document.getElementById('add-student-btn').addEventListener('click', async () =>
         alert("CPR must be exactly 9 numbers and greater than 0!");
         return;
     }
-
     try {
         const response = await fetch('api.php?action=add_student', {
             method: 'POST',
