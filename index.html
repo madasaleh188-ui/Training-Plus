@@ -4,38 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Training Plus</title>
+    <!-- Modern Font: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Vector Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <!-- NAVBAR (HEADER WITH HOME, E/AR, AND ACCOUNT ICONS) -->
     <header class="navbar hidden" id="main-nav">
-        <div class="brand">Training Plus</div>
+        <div class="brand">
+            <span class="brand-badge"><i class="fa-solid fa-graduation-cap"></i></span>
+            Training <span class="brand-accent">Plus</span>
+        </div>
         <div class="nav-icons">
-            <button id="nav-home-btn" title="Home">🏠</button>
-            <button id="lang-toggle" title="Change Language">E/AR</button>
-            <button id="nav-logout-btn" title="Account">👤</button>
+            <button id="nav-home-btn" title="Home"><i class="fa-solid fa-house"></i></button>
+            <button id="lang-toggle" class="chip-btn" title="Change Language"><i class="fa-solid fa-globe"></i> <span>E/AR</span></button>
+            <button id="nav-account-btn" title="Account Info"><i class="fa-solid fa-circle-user"></i></button>
+            <button id="nav-logout-btn" class="logout-btn" title="Sign Out"><i class="fa-solid fa-right-from-bracket"></i></button>
         </div>
     </header>
+
+    <!-- USER INFO MODAL -->
+    <div id="user-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-en="Account Details" data-ar="تفاصيل الحساب">Account Details</h3>
+                <button id="close-modal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="user-card-avatar">
+                    <i class="fa-solid fa-user-gear"></i>
+                </div>
+                <p><strong><span data-en="Username" data-ar="اسم المستخدم">Username</span>:</strong> <span id="modal-username">Guest</span></p>
+                <p><strong><span data-en="Email" data-ar="البريد الإلكتروني">Email</span>:</strong> <span id="modal-email">Not provided</span></p>
+                <p><strong><span data-en="Status" data-ar="الحالة">Status</span>:</strong> <span class="badge-active" data-en="Active Session" data-ar="جلسة نشطة">Active Session</span></p>
+            </div>
+        </div>
+    </div>
 
     <!-- 1. CREATE ACCOUNT / SIGN IN VIEW -->
     <section id="view-auth" class="view-container">
         <div class="auth-card">
-            <h2 id="auth-title" data-en="Sign In" data-ar="تسجيل الدخول">Sign In</h2>
+            <div class="auth-header">
+                <div class="auth-icon"><i class="fa-solid fa-user-shield"></i></div>
+                <h2 id="auth-title" data-en="Sign In" data-ar="تسجيل الدخول">Sign In</h2>
+                <p class="auth-subtitle" data-en="Welcome back to Training Plus" data-ar="مرحباً بك مجدداً في ترينينج بلس">Welcome back to Training Plus</p>
+            </div>
             <form id="auth-form">
                 <div class="form-group signup-only hidden">
                     <label data-en="Username" data-ar="اسم المستخدم">Username</label>
-                    <input type="text" id="auth-username" placeholder="e.g. john_doe">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-user input-icon"></i>
+                        <input type="text" id="auth-username" placeholder="e.g. john_doe">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label data-en="Email" data-ar="البريد الإلكتروني">Email</label>
-                    <input type="email" id="auth-email" required placeholder="name@example.com">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-envelope input-icon"></i>
+                        <input type="email" id="auth-email" required placeholder="name@example.com">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label data-en="Password" data-ar="كلمة المرور">Password</label>
-                    <input type="password" id="auth-password" required placeholder="••••••••">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <input type="password" id="auth-password" required placeholder="••••••••">
+                    </div>
                 </div>
-                <button type="submit" id="btn-submit" class="btn" data-en="Sign In" data-ar="تسجيل الدخول">Sign In</button>
+                <button type="submit" id="btn-submit" class="btn btn-primary" data-en="Sign In" data-ar="تسجيل الدخول">Sign In</button>
             </form>
             <p class="toggle-text">
                 <span id="txt-toggle" data-en="Don't have an account?" data-ar="ليس لديك حساب؟">Don't have an account?</span>
@@ -47,13 +88,19 @@
     <!-- 2. CPR CHECK VIEW -->
     <section id="view-cpr" class="view-container hidden">
         <div class="panel-card">
+            <div class="card-icon"><i class="fa-solid fa-id-card"></i></div>
             <h3 data-en="Enter Student CPR" data-ar="أدخل الرقم الشخصي للطالب">Enter Student CPR</h3>
-            <p class="instruction-text" id="cpr-instructions">cpr only exapt 9 numbers not less than 0 and its uniqe</p>
+            <p class="instruction-text" id="cpr-instructions">CPR must be exactly 9 digits and unique across the directory.</p>
             <form id="cpr-form">
                 <div class="form-group">
-                    <input type="number" id="cpr-input" placeholder="e.g. 123456789" required>
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-hashtag input-icon"></i>
+                        <input type="number" id="cpr-input" placeholder="e.g. 123456789" required>
+                    </div>
                 </div>
-                <button type="button" id="add-student-btn" class="btn" data-en="Add Student" data-ar="إضافة طالب">Add Student</button>
+                <button type="button" id="add-student-btn" class="btn btn-primary" data-en="Add Student" data-ar="إضافة طالب">
+                    <i class="fa-solid fa-plus"></i> <span data-en="Add Student" data-ar="إضافة طالب">Add Student</span>
+                </button>
             </form>
         </div>
     </section>
@@ -62,9 +109,13 @@
     <section id="view-home" class="view-container hidden">
         <div class="dashboard-card">
             <div class="dashboard-header-row">
-                <h2 data-en="Student Directory" data-ar="دليل الطلاب">Student Directory</h2>
-                <!-- GREEN PLUS ICON AT THE TOP OF THE HOME PAGE -->
-                <button id="page-add-btn" class="green-plus-btn" title="Add Student">➕</button>
+                <div>
+                    <h2 data-en="Student Directory" data-ar="دليل الطلاب">Student Directory</h2>
+                    <p class="dashboard-subtext" data-en="Manage and edit registered student profiles" data-ar="إدارة وتعديل ملفات الطلاب المسجلين">Manage and edit registered student profiles</p>
+                </div>
+                <button id="page-add-btn" class="green-plus-btn" title="Add Student">
+                    <i class="fa-solid fa-circle-plus"></i>
+                </button>
             </div>
             <div class="student-list" id="student-container"></div>
         </div>
@@ -72,7 +123,7 @@
 
     <!-- FOOTER WITH LIVE DAY & TIME -->
     <footer class="footer">
-        <span id="live-clock">Loading live time...</span>
+        <i class="fa-regular fa-clock"></i> <span id="live-clock">Loading live time...</span>
     </footer>
 
     <script src="script.js"></script>
