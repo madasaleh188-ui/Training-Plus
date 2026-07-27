@@ -3,77 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Training Plus Institute - Student Management Portal</title>
+    <title>Training Plus Institute - Management Portal</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <header class="top-nav">
+    <div class="top-nav">
         <div class="time-display" id="clock">00:00:00 AM</div>
         <div class="nav-controls">
             <button id="lang-toggle" class="nav-btn">العربية</button>
             <button id="account-btn" class="nav-btn" onclick="openAccountModal()">Account</button>
             <button id="logout-btn" class="nav-btn logout-btn" onclick="logoutUser()">Logout</button>
         </div>
-    </header>
+    </div>
 
-    <main>
-        <!-- Auth Section -->
-        <section id="view-auth" class="card-view">
-            <h2 id="txt-auth-title">Welcome to Training Plus</h2>
-            <p id="txt-auth-desc" class="subtitle">Please log in or create an account to access student management.</p>
-            <form id="auth-form" class="standard-form">
-                <label>
-                    <span id="txt-label-user">Username:</span>
-                    <input type="text" id="auth-username" required placeholder="Enter username">
-                </label>
-                <label>
-                    <span id="txt-label-email">Email:</span>
-                    <input type="email" id="auth-email" required placeholder="Enter email">
-                </label>
-                <label>
-                    <span id="txt-label-pass">Password:</span>
-                    <input type="password" id="auth-password" required placeholder="Enter password">
-                </label>
-                <button type="submit" class="primary-btn" id="btn-login">Sign In / Sign Up</button>
-            </form>
-        </section>
+    <!-- Login / Register Section -->
+    <section id="view-auth" class="card-view">
+        <h2 id="txt-auth-title">Welcome to Training Plus</h2>
+        <p id="txt-auth-desc">Please log in or create an account to access student management.</p>
+        <form id="auth-form" class="standard-form">
+            <label>
+                <span id="txt-label-user">Username:</span>
+                <input type="text" id="auth-username" required placeholder="Enter username">
+            </label>
+            <label>
+                <span id="txt-label-email">Email:</span>
+                <input type="email" id="auth-email" required placeholder="Enter email">
+            </label>
+            <label>
+                <span id="txt-label-pass">Password:</span>
+                <input type="password" id="auth-password" required placeholder="Enter password">
+            </label>
+            <button type="submit" class="primary-btn" id="btn-login">Sign In / Sign Up</button>
+        </form>
+    </section>
 
-        <!-- Dashboard View -->
-        <section id="view-home" class="card-view hidden">
-            <div class="dashboard-header">
-                <h2 id="txt-dashboard-title">Student Directory</h2>
-                <button class="primary-btn" onclick="showView('view-add-cpr')" id="btn-go-add">+ Add New CPR</button>
+    <!-- Main Dashboard Section -->
+    <section id="view-home" class="card-view hidden">
+        <div class="dashboard-header">
+            <h2 id="txt-dashboard-title">Student Directory</h2>
+            <button class="primary-btn" onclick="showView('view-add-cpr')" id="btn-go-add">+ Add New CPR</button>
+        </div>
+
+        <div id="student-container" class="student-list">
+            <!-- Student records render here -->
+        </div>
+    </section>
+
+    <!-- CPR Registration View -->
+    <section id="view-add-cpr" class="card-view hidden">
+        <h2 id="txt-cpr-title">Register New CPR</h2>
+        <form id="cpr-form" class="standard-form" onsubmit="return false;">
+            <label>
+                <span id="txt-cpr-label">CPR Number (9 Digits):</span>
+                <input type="text" id="cpr-input" maxlength="9" required placeholder="e.g. 980123456">
+            </label>
+            <div class="button-group">
+                <button type="button" class="primary-btn" id="add-student-btn">Submit Record</button>
+                <button type="button" class="secondary-btn" onclick="showView('view-home')" id="btn-cancel">Cancel</button>
             </div>
-
-            <div id="student-container" class="student-list">
-                <!-- Records load dynamically here -->
-            </div>
-        </section>
-
-        <!-- CPR Registration View -->
-        <section id="view-add-cpr" class="card-view hidden">
-            <h2 id="txt-cpr-title">Register New CPR</h2>
-            <p class="subtitle">Add a student record using their 9-digit CPR number.</p>
-            <form id="cpr-form" class="standard-form" onsubmit="return false;">
-                <label>
-                    <span id="txt-cpr-label">CPR Number (9 Digits):</span>
-                    <input type="text" id="cpr-input" maxlength="9" required placeholder="e.g. 980123456">
-                </label>
-                <div class="button-group">
-                    <button type="button" class="primary-btn" id="add-student-btn">Submit Record</button>
-                    <button type="button" class="secondary-btn" onclick="showView('view-home')" id="btn-cancel">Cancel</button>
-                </div>
-            </form>
-        </section>
-    </main>
+        </form>
+    </section>
 
     <!-- Account Details Modal -->
     <div id="account-modal" class="modal hidden">
         <div class="modal-content">
             <span class="close-btn" onclick="closeAccountModal()">&times;</span>
-            <h3 id="txt-modal-title" style="color: var(--accent-slate-blue); margin-bottom: 12px;">User Account Details</h3>
-            <p style="margin-bottom: 6px;"><strong>Username:</strong> <span id="modal-username">Guest</span></p>
+            <h3 id="txt-modal-title">User Account Details</h3>
+            <p><strong>Username:</strong> <span id="modal-username">Guest</span></p>
             <p><strong>Email:</strong> <span id="modal-email">Not Provided</span></p>
         </div>
     </div>
