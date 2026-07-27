@@ -1,0 +1,24 @@
+CREATE DATABASE IF NOT EXISTS training_plus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE training_plus;
+
+CREATE TABLE IF NOT EXISTS students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) DEFAULT 'New Student',
+    cpr VARCHAR(9) UNIQUE NOT NULL,
+    gender VARCHAR(10) DEFAULT 'male',
+    email VARCHAR(255) DEFAULT '',
+    status VARCHAR(50) DEFAULT 'student',
+    courses TEXT,
+    ministry VARCHAR(10) DEFAULT 'no',
+    degree VARCHAR(50) DEFAULT 'high-school',
+    photo VARCHAR(255) DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
