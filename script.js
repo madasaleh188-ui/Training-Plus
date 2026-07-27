@@ -5,7 +5,6 @@ let currentLang = localStorage.getItem('tp_currentLang') || "en";
 
 // Load students or default to empty array
 let studentDatabase = JSON.parse(localStorage.getItem('tp_studentDatabase')) || [];
-
 function saveStateToStorage() {
     localStorage.setItem('tp_currentUser', currentUser);
     localStorage.setItem('tp_currentUserEmail', currentUserEmail);
