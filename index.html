@@ -1,130 +1,79 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Training Plus</title>
-    <!-- Modern Font: Inter & Outfit -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome Vector Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Training Plus Institute - Management Portal</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- NAVBAR (HEADER WITH HOME, E/AR, AND ACCOUNT ICONS) -->
-    <header class="navbar hidden" id="main-nav">
-        <div class="brand">
-            <span class="brand-badge"><i class="fa-solid fa-graduation-cap"></i></span>
-            Training <span class="brand-accent">Plus</span>
-        </div>
-        <div class="nav-icons">
-            <button id="nav-home-btn" title="Home"><i class="fa-solid fa-house"></i></button>
-            <button id="lang-toggle" class="chip-btn" title="Change Language"><i class="fa-solid fa-globe"></i> <span>E/AR</span></button>
-            <button id="nav-account-btn" title="Account Info"><i class="fa-solid fa-circle-user"></i></button>
-            <button id="nav-logout-btn" class="logout-btn" title="Sign Out"><i class="fa-solid fa-right-from-bracket"></i></button>
-        </div>
-    </header>
-
-    <!-- USER INFO MODAL -->
-    <div id="user-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 data-en="Account Details" data-ar="تفاصيل الحساب">Account Details</h3>
-                <button id="close-modal" class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="user-card-avatar">
-                    <i class="fa-solid fa-user-gear"></i>
-                </div>
-                <p><strong><span data-en="Username" data-ar="اسم المستخدم">Username</span>:</strong> <span id="modal-username">Guest</span></p>
-                <p><strong><span data-en="Email" data-ar="البريد الإلكتروني">Email</span>:</strong> <span id="modal-email">Not provided</span></p>
-                <p><strong><span data-en="Status" data-ar="الحالة">Status</span>:</strong> <span class="badge-active" data-en="Active Session" data-ar="جلسة نشطة">Active Session</span></p>
-            </div>
+    <div class="top-nav">
+        <div class="time-display" id="clock">00:00:00 AM</div>
+        <div class="nav-controls">
+            <button id="lang-toggle" class="nav-btn">العربية</button>
+            <button id="account-btn" class="nav-btn" onclick="openAccountModal()">Account</button>
+            <button id="logout-btn" class="nav-btn logout-btn" onclick="logoutUser()">Logout</button>
         </div>
     </div>
 
-    <!-- 1. CREATE ACCOUNT / SIGN IN VIEW -->
-    <section id="view-auth" class="view-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <div class="auth-icon"><i class="fa-solid fa-user-shield"></i></div>
-                <h2 id="auth-title" data-en="Sign In" data-ar="تسجيل الدخول">Sign In</h2>
-                <p class="auth-subtitle" data-en="Welcome back to Training Plus" data-ar="مرحباً بك مجدداً في ترينينج بلس">Welcome back to Training Plus</p>
+    <!-- Login / Register Section -->
+    <section id="view-auth" class="card-view">
+        <h2 id="txt-auth-title">Welcome to Training Plus</h2>
+        <p id="txt-auth-desc">Please log in or create an account to access student management.</p>
+        <form id="auth-form" class="standard-form">
+            <label>
+                <span id="txt-label-user">Username:</span>
+                <input type="text" id="auth-username" required placeholder="Enter username">
+            </label>
+            <label>
+                <span id="txt-label-email">Email:</span>
+                <input type="email" id="auth-email" required placeholder="Enter email">
+            </label>
+            <label>
+                <span id="txt-label-pass">Password:</span>
+                <input type="password" id="auth-password" required placeholder="Enter password">
+            </label>
+            <button type="submit" class="primary-btn" id="btn-login">Sign In / Sign Up</button>
+        </form>
+    </section>
+
+    <!-- Main Dashboard Section -->
+    <section id="view-home" class="card-view hidden">
+        <div class="dashboard-header">
+            <h2 id="txt-dashboard-title">Student Directory</h2>
+            <button class="primary-btn" onclick="showView('view-add-cpr')" id="btn-go-add">+ Add New CPR</button>
+        </div>
+
+        <div id="student-container" class="student-list">
+            <!-- Student records render here -->
+        </div>
+    </section>
+
+    <!-- CPR Registration View -->
+    <section id="view-add-cpr" class="card-view hidden">
+        <h2 id="txt-cpr-title">Register New CPR</h2>
+        <form id="cpr-form" class="standard-form" onsubmit="return false;">
+            <label>
+                <span id="txt-cpr-label">CPR Number (9 Digits):</span>
+                <input type="text" id="cpr-input" maxlength="9" required placeholder="e.g. 980123456">
+            </label>
+            <div class="button-group">
+                <button type="button" class="primary-btn" id="add-student-btn">Submit Record</button>
+                <button type="button" class="secondary-btn" onclick="showView('view-home')" id="btn-cancel">Cancel</button>
             </div>
-            <form id="auth-form">
-                <div class="form-group signup-only hidden">
-                    <label data-en="Username" data-ar="اسم المستخدم">Username</label>
-                    <div class="input-icon-wrapper">
-                        <i class="fa-solid fa-user input-icon"></i>
-                        <input type="text" id="auth-username" placeholder="e.g. john_doe">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label data-en="Email" data-ar="البريد الإلكتروني">Email</label>
-                    <div class="input-icon-wrapper">
-                        <i class="fa-solid fa-envelope input-icon"></i>
-                        <input type="email" id="auth-email" required placeholder="name@example.com">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label data-en="Password" data-ar="كلمة المرور">Password</label>
-                    <div class="input-icon-wrapper">
-                        <i class="fa-solid fa-lock input-icon"></i>
-                        <input type="password" id="auth-password" required placeholder="••••••••">
-                    </div>
-                </div>
-                <button type="submit" id="btn-submit" class="btn btn-primary" data-en="Sign In" data-ar="تسجيل الدخول">Sign In</button>
-            </form>
-            <p class="toggle-text">
-                <span id="txt-toggle" data-en="Don't have an account?" data-ar="ليس لديك حساب؟">Don't have an account?</span>
-                <a href="#" id="auth-toggle" data-en="Create Account" data-ar="إنشاء حساب">Create Account</a>
-            </p>
-        </div>
+        </form>
     </section>
 
-    <!-- 2. CPR CHECK VIEW -->
-    <section id="view-cpr" class="view-container hidden">
-        <div class="panel-card">
-            <div class="card-icon"><i class="fa-solid fa-id-card"></i></div>
-            <h3 data-en="Enter Student CPR" data-ar="أدخل الرقم الشخصي للطالب">Enter Student CPR</h3>
-            <p class="instruction-text" id="cpr-instructions">CPR must be exactly 9 digits and unique across the directory.</p>
-            <form id="cpr-form">
-                <div class="form-group">
-                    <div class="input-icon-wrapper">
-                        <i class="fa-solid fa-hashtag input-icon"></i>
-                        <input type="number" id="cpr-input" placeholder="e.g. 123456789" required>
-                    </div>
-                </div>
-                <button type="button" id="add-student-btn" class="btn btn-primary" data-en="Add Student" data-ar="إضافة طالب">
-                    <i class="fa-solid fa-plus"></i> <span data-en="Add Student" data-ar="إضافة طالب">Add Student</span>
-                </button>
-            </form>
+    <!-- Account Details Modal -->
+    <div id="account-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAccountModal()">&times;</span>
+            <h3 id="txt-modal-title">User Account Details</h3>
+            <p><strong>Username:</strong> <span id="modal-username">Guest</span></p>
+            <p><strong>Email:</strong> <span id="modal-email">Not Provided</span></p>
         </div>
-    </section>
-
-    <!-- 3. HOME DASHBOARD VIEW -->
-    <section id="view-home" class="view-container hidden">
-        <div class="dashboard-card">
-            <div class="dashboard-header-row">
-                <div>
-                    <h2 data-en="Student Directory" data-ar="دليل الطلاب">Student Directory</h2>
-                    <p class="dashboard-subtext" data-en="Manage and edit registered student profiles" data-ar="إدارة وتعديل ملفات الطلاب المسجلين">Manage and edit registered student profiles</p>
-                </div>
-                <button id="page-add-btn" class="green-plus-btn" title="Add Student">
-                    <i class="fa-solid fa-circle-plus"></i>
-                </button>
-            </div>
-            <div class="student-list" id="student-container"></div>
-        </div>
-    </section>
-
-    <!-- FOOTER WITH LIVE DAY & TIME -->
-    <footer class="footer">
-        <i class="fa-regular fa-clock"></i> <span id="live-clock">Loading live time...</span>
-    </footer>
+    </div>
 
     <script src="script.js"></script>
 </body>
