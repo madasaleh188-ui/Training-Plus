@@ -77,7 +77,7 @@ function showView(viewId) {
     document.getElementById(viewId).classList.remove('hidden');
 }
 
-// Auth Submit
+// User Sign-In Handler
 document.getElementById('auth-form').addEventListener('submit', (e) => {
     e.preventDefault();
     currentUser = document.getElementById('auth-username').value.trim();
@@ -97,10 +97,16 @@ function logoutUser() {
     showView('view-auth');
 }
 
-function openAccountModal() { document.getElementById('account-modal').classList.remove('hidden'); }
-function closeAccountModal() { document.getElementById('account-modal').classList.add('hidden'); }
+// Modal Handlers
+function openAccountModal() {
+    document.getElementById('account-modal').classList.remove('hidden');
+}
 
-// Fetch Records from Database
+function closeAccountModal() {
+    document.getElementById('account-modal').classList.add('hidden');
+}
+
+// Fetch Records from MySQL Server
 async function fetchStudentDirectory() {
     try {
         const response = await fetch('api.php?action=get_students');
@@ -140,7 +146,7 @@ document.getElementById('add-student-btn').addEventListener('click', async () =>
     }
 });
 
-// Update Student Fields
+// Inline Field Updates
 async function updateStudentField(id, field, value) {
     await fetch('api.php?action=update_student', {
         method: 'POST',
@@ -149,7 +155,7 @@ async function updateStudentField(id, field, value) {
     });
 }
 
-// Upload Student Photo
+// Photo Upload Handler
 async function uploadStudentPhoto(event, id) {
     const file = event.target.files[0];
     if (!file) return;
@@ -183,7 +189,7 @@ async function deleteStudent(id) {
     }
 }
 
-// Render Accordion Cards with Thin Outline SVGs
+// Render Student Cards
 function renderStudentDirectory() {
     const container = document.getElementById('student-container');
     container.innerHTML = "";
@@ -199,22 +205,15 @@ function renderStudentDirectory() {
         item.innerHTML = `
             <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
                 <span class="student-name">${student.name}</span>
-                <svg class="arrow-icon" viewBox="0 0 24 24">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
+                <span>▼</span>
             </div>
             <div class="student-details hidden">
                 <div class="student-actions-wrapper">
-                    <button class="delete-icon-btn" onclick="deleteStudent(${student.id})" title="Delete Record">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
+                    <button class="action-btn" onclick="deleteStudent(${student.id})" title="Delete">🗑️</button>
                 </div>
 
                 <div class="student-photo-container">
-                    <img src="${student.photo || 'https://via.placeholder.com/96?text=Photo'}" alt="Student Photo" class="student-photo-img">
+                    <img src="${student.photo || 'https://via.placeholder.com/90?text=Photo'}" alt="Student Photo" class="student-photo-img">
                 </div>
 
                 <div class="grid-form">
@@ -268,7 +267,7 @@ function renderStudentDirectory() {
     });
 }
 
-// Initialize App
+// App Initialization
 window.addEventListener('DOMContentLoaded', () => {
     runLiveClock();
     showView('view-auth');
