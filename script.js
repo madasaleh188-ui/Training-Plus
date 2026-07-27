@@ -1,245 +1,257 @@
-// Persistent State Management using localStorage
-let currentUser = localStorage.getItem('tp_currentUser') || "Guest";
-let currentUserEmail = localStorage.getItem('tp_currentUserEmail') || "";
-let currentLang = localStorage.getItem('tp_currentLang') || "en";
+let currentUser = "Guest";
+let currentUserEmail = "";
+let currentLang = "en";
+let studentDatabase = [];
 
-// Load students or default to empty array
-let studentDatabase = JSON.parse(localStorage.getItem('tp_studentDatabase')) || [];
-function saveStateToStorage() {
-    localStorage.setItem('tp_currentUser', currentUser);
-    localStorage.setItem('tp_currentUserEmail', currentUserEmail);
-    localStorage.setItem('tp_currentLang', currentLang);
-    localStorage.setItem('tp_studentDatabase', JSON.stringify(studentDatabase));
+// Language Dictionary
+const translations = {
+    en: {
+        authTitle: "Welcome to Training Plus",
+        authDesc: "Please log in or create an account to access student management.",
+        labelUser: "Username:",
+        labelEmail: "Email:",
+        labelPass: "Password:",
+        btnLogin: "Sign In / Sign Up",
+        dashTitle: "Student Directory",
+        btnAddCpr: "+ Add New CPR",
+        cprTitle: "Register New CPR",
+        cprLabel: "CPR Number (9 Digits):",
+        btnSubmit: "Submit Record",
+        btnCancel: "Cancel",
+        modalTitle: "User Account Details"
+    },
+    ar: {
+        authTitle: "مرحباً بكم في ترينينج بلس",
+        authDesc: "يرجى تسجيل الدخول أو إنشاء حساب للوصول إلى إدارة الطلاب.",
+        labelUser: "اسم المستخدم:",
+        labelEmail: "البريد الإلكتروني:",
+        labelPass: "كلمة المرور:",
+        btnLogin: "تسجيل الدخول / التسجيل",
+        dashTitle: "سجل الطلاب",
+        btnAddCpr: "+ إضافة شخصي جديد",
+        cprTitle: "تسجيل الرقم الشخصي",
+        cprLabel: "الرقم الشخصي (9 أرقام):",
+        btnSubmit: "إرسال البيانات",
+        btnCancel: "إلغاء",
+        modalTitle: "تفاصيل حساب المستخدم"
+    }
+};
+
+// Toggle Language Mode
+document.getElementById('lang-toggle').addEventListener('click', () => {
+    currentLang = currentLang === 'en' ? 'ar' : 'en';
+    document.getElementById('lang-toggle').innerText = currentLang === 'en' ? 'العربية' : 'English';
+    document.body.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
+    applyTranslations();
+});
+
+function applyTranslations() {
+    const t = translations[currentLang];
+    document.getElementById('txt-auth-title').innerText = t.authTitle;
+    document.getElementById('txt-auth-desc').innerText = t.authDesc;
+    document.getElementById('txt-label-user').innerText = t.labelUser;
+    document.getElementById('txt-label-email').innerText = t.labelEmail;
+    document.getElementById('txt-label-pass').innerText = t.labelPass;
+    document.getElementById('btn-login').innerText = t.btnLogin;
+    document.getElementById('txt-dashboard-title').innerText = t.dashTitle;
+    document.getElementById('btn-go-add').innerText = t.btnAddCpr;
+    document.getElementById('txt-cpr-title').innerText = t.cprTitle;
+    document.getElementById('txt-cpr-label').innerText = t.cprLabel;
+    document.getElementById('add-student-btn').innerText = t.btnSubmit;
+    document.getElementById('btn-cancel').innerText = t.btnCancel;
+    document.getElementById('txt-modal-title').innerText = t.modalTitle;
 }
 
-// Live Clock System
+// Live Navigation Clock
 function runLiveClock() {
-    const clock = document.getElementById('live-clock');
-    if (!clock) return;
-    const update = () => {
+    const clockEl = document.getElementById('clock');
+    setInterval(() => {
         const now = new Date();
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-        clock.textContent = now.toLocaleDateString(currentLang === 'en' ? 'en-US' : 'ar-BH', options);
-    };
-    update();
-    setInterval(update, 1000);
+        clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }, 1000);
 }
 
-// Single-Page View Router Engine
+// View Routing Switcher
 function showView(viewId) {
-    document.getElementById('view-auth').classList.add('hidden');
-    document.getElementById('view-cpr').classList.add('hidden');
-    document.getElementById('view-home').classList.add('hidden');
-    document.getElementById('main-nav').classList.add('hidden');
-
+    document.querySelectorAll('.card-view').forEach(view => view.classList.add('hidden'));
     document.getElementById(viewId).classList.remove('hidden');
-    if (viewId !== 'view-auth') {
-        document.getElementById('main-nav').classList.remove('hidden');
-    }
 }
 
-// Account Modal Engine
-const userModal = document.getElementById('user-modal');
-const accountBtn = document.getElementById('nav-account-btn');
-const closeModal = document.getElementById('close-modal');
-
-accountBtn.addEventListener('click', () => {
-    document.getElementById('modal-username').textContent = currentUser;
-    document.getElementById('modal-email').textContent = currentUserEmail || 'Not specified';
-    userModal.classList.remove('hidden');
-});
-
-closeModal.addEventListener('click', () => userModal.classList.add('hidden'));
-window.addEventListener('click', (e) => {
-    if (e.target === userModal) userModal.classList.add('hidden');
-});
-
-// Authentication Toggle Engine
-const authToggle = document.getElementById('auth-toggle');
-let isSignUpMode = false;
-authToggle.addEventListener('click', (e) => {
-    e.preventDefault();
-    isSignUpMode = !isSignUpMode;
-    document.querySelectorAll('.signup-only').forEach(el => el.classList.toggle('hidden', !isSignUpMode));
-    
-    const title = document.getElementById('auth-title');
-    const submitBtn = document.getElementById('btn-submit');
-    const toggleTxt = document.getElementById('txt-toggle');
-    
-    if (isSignUpMode) {
-        title.setAttribute('data-en', 'Create Account'); title.setAttribute('data-ar', 'إنشاء حساب');
-        submitBtn.setAttribute('data-en', 'Sign Up'); submitBtn.setAttribute('data-ar', 'إنشاء حساب');
-        toggleTxt.setAttribute('data-en', 'Already have an account?'); toggleTxt.setAttribute('data-ar', 'لديك حساب بالفعل؟');
-        authToggle.setAttribute('data-en', 'Sign In'); authToggle.setAttribute('data-ar', 'تسجيل الدخول');
-    } else {
-        title.setAttribute('data-en', 'Sign In'); title.setAttribute('data-ar', 'تسجيل الدخول');
-        submitBtn.setAttribute('data-en', 'Sign In'); submitBtn.setAttribute('data-ar', 'تسجيل الدخول');
-        toggleTxt.setAttribute('data-en', "Don't have an account?"); toggleTxt.setAttribute('data-ar', 'ليس لديك حساب؟');
-        authToggle.setAttribute('data-en', 'Create Account'); authToggle.setAttribute('data-ar', 'إنشاء حساب');
-    }
-    updateLanguageLayout();
-});
-
+// User Sign-In Handler
 document.getElementById('auth-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const usernameInput = document.getElementById('auth-username').value.trim();
-    const emailInput = document.getElementById('auth-email').value.trim();
+    currentUser = document.getElementById('auth-username').value.trim();
+    currentUserEmail = document.getElementById('auth-email').value.trim();
     
-    currentUserEmail = emailInput;
-    currentUser = isSignUpMode && usernameInput ? usernameInput : (emailInput.split('@')[0]);
+    document.getElementById('modal-username').innerText = currentUser;
+    document.getElementById('modal-email').innerText = currentUserEmail;
     
-    saveStateToStorage();
-    showView('view-cpr');
+    showView('view-home');
+    fetchStudentDirectory();
 });
 
-// CPR Form Submission & Validation
-document.getElementById('add-student-btn').addEventListener('click', () => {
+function logoutUser() {
+    currentUser = "Guest";
+    currentUserEmail = "";
+    document.getElementById('auth-form').reset();
+    showView('view-auth');
+}
+
+// Modal Handlers
+function openAccountModal() {
+    document.getElementById('account-modal').classList.remove('hidden');
+}
+
+function closeAccountModal() {
+    document.getElementById('account-modal').classList.add('hidden');
+}
+
+// Fetch Records from MySQL Server
+async function fetchStudentDirectory() {
+    try {
+        const response = await fetch('api.php?action=get_students');
+        studentDatabase = await response.json();
+        renderStudentDirectory();
+    } catch (err) {
+        console.error("Failed to load records from MySQL:", err);
+    }
+}
+
+// Add Student Record
+document.getElementById('add-student-btn').addEventListener('click', async () => {
     const cprInput = document.getElementById('cpr-input').value.trim();
-    
+
     if (cprInput.length !== 9 || isNaN(cprInput) || parseInt(cprInput) <= 0) {
         alert("CPR must be exactly 9 numbers and greater than 0!");
         return;
     }
 
-    const existingStudent = studentDatabase.find(s => s.cpr === cprInput);
-    if (existingStudent) {
-        alert("this student orady added by " + currentUser + " ");
-    } else {
-        const newStudent = {
-            name: "New Student",
-            cpr: cprInput,
-            gender: "male",
-            email: "",
-            status: "student",
-            courses: "",
-            ministry: "no",
-            degree: "high-school",
-            photo: ""
-        };
-        studentDatabase.push(newStudent);
-        saveStateToStorage();
-        
-        alert("the student addes succussfly ");
-        
-        renderStudentDirectory();
-        showView('view-home');
-        document.getElementById('cpr-form').reset();
+    try {
+        const response = await fetch('api.php?action=add_student', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cpr: cprInput })
+        });
+
+        const result = await response.json();
+        alert(result.message);
+
+        if (result.status === 'success') {
+            document.getElementById('cpr-form').reset();
+            showView('view-home');
+            fetchStudentDirectory();
+        }
+    } catch (err) {
+        alert("Server communication failed.");
     }
 });
 
-// Student Delete Action
-function deleteStudent(index) {
-    if (confirm("Delete this student entry?")) {
-        studentDatabase.splice(index, 1);
-        saveStateToStorage();
-        renderStudentDirectory();
-    }
+// Inline Field Updates
+async function updateStudentField(id, field, value) {
+    await fetch('api.php?action=update_student', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, field, value })
+    });
 }
 
-// Image Preview Renderer & Data Persistence
-function previewImage(event, index) {
+// Photo Upload Handler
+async function uploadStudentPhoto(event, id) {
     const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById(`preview-${index}`).src = e.target.result;
-            studentDatabase[index].photo = e.target.result;
-            saveStateToStorage();
-        };
-        reader.readAsDataURL(file);
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('id', id);
+    formData.append('photo', file);
+
+    const response = await fetch('api.php?action=upload_photo', {
+        method: 'POST',
+        body: formData
+    });
+
+    const result = await response.json();
+    if (result.status === 'success') {
+        fetchStudentDirectory();
+    } else {
+        alert("Failed to upload image.");
     }
 }
 
-// Field Input Helper for Real-Time Storage
-function updateStudentField(index, field, value) {
-    studentDatabase[index][field] = value;
-    saveStateToStorage();
+// Delete Record
+async function deleteStudent(id) {
+    if (confirm("Are you sure you want to delete this student entry?")) {
+        await fetch('api.php?action=delete_student', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        fetchStudentDirectory();
+    }
 }
 
-// Student Directory Rendering Function
+// Render Student Cards
 function renderStudentDirectory() {
     const container = document.getElementById('student-container');
     container.innerHTML = "";
-    
-    if (studentDatabase.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fa-solid fa-folder-open"></i>
-                <p>No student records found. Click the + button above to add one.</p>
-            </div>`;
+
+    if (!studentDatabase || studentDatabase.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#a0aec0; padding:20px;">No records found in database.</p>`;
         return;
     }
-    
-    studentDatabase.forEach((student, index) => {
+
+    studentDatabase.forEach((student) => {
         const item = document.createElement('div');
         item.className = "student-item";
         item.innerHTML = `
             <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                <div class="header-left">
-                    <img src="${student.photo || 'https://via.placeholder.com/90?text=Photo'}" class="student-mini-avatar" alt="Mini Avatar">
-                    <span class="student-name">${student.name}</span>
-                </div>
-                <i class="fa-solid fa-chevron-down accordion-icon"></i>
+                <span class="student-name">${student.name}</span>
+                <span>▼</span>
             </div>
             <div class="student-details hidden">
                 <div class="student-actions-wrapper">
-                    <button class="action-btn delete-btn" onclick="deleteStudent(${index})" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
+                    <button class="action-btn" onclick="deleteStudent(${student.id})" title="Delete">🗑️</button>
                 </div>
 
-                <!-- TOP-LEFT PHOTO LAYOUT SECTION -->
-                <div class="profile-layout-header">
-                    <div class="student-photo-container">
-                        <img id="preview-${index}" src="${student.photo || 'https://via.placeholder.com/90?text=Photo'}" alt="Student Photo" class="student-photo-img">
-                        <label class="photo-upload-overlay" for="file-input-${index}" title="Change Photo">
-                            <i class="fa-solid fa-camera"></i>
-                        </label>
-                        <input type="file" id="file-input-${index}" class="hidden-file-input" accept="image/*" onchange="previewImage(event, ${index})">
-                    </div>
-                    <div class="profile-brief">
-                        <h4>${student.name}</h4>
-                        <span class="cpr-badge"><i class="fa-solid fa-id-badge"></i> CPR: ${student.cpr}</span>
-                    </div>
+                <div class="student-photo-container">
+                    <img src="${student.photo || 'https://via.placeholder.com/90?text=Photo'}" alt="Student Photo" class="student-photo-img">
                 </div>
-                
+
                 <div class="grid-form">
                     <label>Full Name: 
-                        <input type="text" value="${student.name}" onchange="updateStudentField(${index}, 'name', this.value); renderStudentDirectory();">
+                        <input type="text" value="${student.name}" onchange="updateStudentField(${student.id}, 'name', this.value)">
                     </label>
-                    <label>CPR Number: 
-                        <input type="text" value="${student.cpr}" readonly class="readonly-input">
+                    <label>CPR: 
+                        <input type="text" value="${student.cpr}" readonly>
                     </label>
                     <label>Upload Photo: 
-                        <input type="file" accept="image/*" onchange="previewImage(event, ${index})">
+                        <input type="file" accept="image/*" onchange="uploadStudentPhoto(event, ${student.id})">
                     </label>
                     <label>Gender: 
-                        <select onchange="updateStudentField(${index}, 'gender', this.value)">
+                        <select onchange="updateStudentField(${student.id}, 'gender', this.value)">
                             <option value="male" ${student.gender === 'male' ? 'selected' : ''}>Male</option>
                             <option value="female" ${student.gender === 'female' ? 'selected' : ''}>Female</option>
                         </select>
                     </label>
                     <label>Email: 
-                        <input type="email" value="${student.email}" onchange="updateStudentField(${index}, 'email', this.value)">
-                    </label>
-                    <label>CV Document: 
-                        <input type="file" accept=".pdf">
+                        <input type="email" value="${student.email || ''}" onchange="updateStudentField(${student.id}, 'email', this.value)">
                     </label>
                     <label>Status: 
-                        <select onchange="updateStudentField(${index}, 'status', this.value)">
+                        <select onchange="updateStudentField(${student.id}, 'status', this.value)">
                             <option value="student" ${student.status === 'student' ? 'selected' : ''}>Student</option>
                             <option value="graduate" ${student.status === 'graduate' ? 'selected' : ''}>Graduate</option>
                         </select>
                     </label>
                     <label>Courses: 
-                        <input type="text" value="${student.courses}" onchange="updateStudentField(${index}, 'courses', this.value)">
+                        <input type="text" value="${student.courses || ''}" onchange="updateStudentField(${student.id}, 'courses', this.value)">
                     </label>
                     <label>Ministry of Labour: 
-                        <select onchange="updateStudentField(${index}, 'ministry', this.value)">
+                        <select onchange="updateStudentField(${student.id}, 'ministry', this.value)">
                             <option value="yes" ${student.ministry === 'yes' ? 'selected' : ''}>Yes</option>
                             <option value="no" ${student.ministry === 'no' ? 'selected' : ''}>No</option>
                         </select>
                     </label>
                     <label>Degree: 
-                        <select onchange="updateStudentField(${index}, 'degree', this.value)">
+                        <select onchange="updateStudentField(${student.id}, 'degree', this.value)">
                             <option value="high-school" ${student.degree === 'high-school' ? 'selected' : ''}>High School</option>
                             <option value="diploma" ${student.degree === 'diploma' ? 'selected' : ''}>Diploma</option>
                             <option value="bachelor" ${student.degree === 'bachelor' ? 'selected' : ''}>Bachelor</option>
@@ -255,44 +267,8 @@ function renderStudentDirectory() {
     });
 }
 
-// Navbar Action Bindings
-document.getElementById('nav-home-btn').addEventListener('click', () => showView('view-home'));
-document.getElementById('page-add-btn').addEventListener('click', () => showView('view-cpr'));
-document.getElementById('nav-logout-btn').addEventListener('click', () => {
-    if (confirm("Sign out of current account?")) {
-        currentUser = "Guest";
-        currentUserEmail = "";
-        saveStateToStorage();
-        document.getElementById('auth-form').reset();
-        showView('view-auth');
-    }
-});
-
-// Multi-language Toggle Engine
-function updateLanguageLayout() {
-    document.querySelectorAll('[data-en]').forEach(el => {
-        el.textContent = el.getAttribute(`data-${currentLang}`);
-    });
-    document.body.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = currentLang;
-}
-
-document.getElementById('lang-toggle').addEventListener('click', () => {
-    currentLang = currentLang === 'en' ? 'ar' : 'en';
-    saveStateToStorage();
-    updateLanguageLayout();
-});
-
-// Application Startup Initialization
+// App Initialization
 window.addEventListener('DOMContentLoaded', () => {
     runLiveClock();
-    updateLanguageLayout();
-    renderStudentDirectory();
-    
-    // Auto restore session if user was logged in
-    if (currentUser && currentUser !== "Guest") {
-        showView('view-home');
-    } else {
-        showView('view-auth');
-    }
+    showView('view-auth');
 });
