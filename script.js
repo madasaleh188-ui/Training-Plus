@@ -1,8 +1,19 @@
-let currentUser = "Guest";
-let currentLang = "en";
-const studentDatabase = [];
+// Persistent State Management using localStorage
+let currentUser = localStorage.getItem('tp_currentUser') || "Guest";
+let currentUserEmail = localStorage.getItem('tp_currentUserEmail') || "";
+let currentLang = localStorage.getItem('tp_currentLang') || "en";
 
-// Live Clock System "
+// Load students or default to empty array
+let studentDatabase = JSON.parse(localStorage.getItem('tp_studentDatabase')) || [];
+
+function saveStateToStorage() {
+    localStorage.setItem('tp_currentUser', currentUser);
+    localStorage.setItem('tp_currentUserEmail', currentUserEmail);
+    localStorage.setItem('tp_currentLang', currentLang);
+    localStorage.setItem('tp_studentDatabase', JSON.stringify(studentDatabase));
+}
+
+// Live Clock System
 function runLiveClock() {
     const clock = document.getElementById('live-clock');
     if (!clock) return;
@@ -14,7 +25,6 @@ function runLiveClock() {
     update();
     setInterval(update, 1000);
 }
-//"
 
 // Single-Page View Router Engine
 function showView(viewId) {
@@ -28,6 +38,22 @@ function showView(viewId) {
         document.getElementById('main-nav').classList.remove('hidden');
     }
 }
+
+// Account Modal Engine
+const userModal = document.getElementById('user-modal');
+const accountBtn = document.getElementById('nav-account-btn');
+const closeModal = document.getElementById('close-modal');
+
+accountBtn.addEventListener('click', () => {
+    document.getElementById('modal-username').textContent = currentUser;
+    document.getElementById('modal-email').textContent = currentUserEmail || 'Not specified';
+    userModal.classList.remove('hidden');
+});
+
+closeModal.addEventListener('click', () => userModal.classList.add('hidden'));
+window.addEventListener('click', (e) => {
+    if (e.target === userModal) userModal.classList.add('hidden');
+});
 
 // Authentication Toggle Engine
 const authToggle = document.getElementById('auth-toggle');
@@ -58,11 +84,16 @@ authToggle.addEventListener('click', (e) => {
 document.getElementById('auth-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const usernameInput = document.getElementById('auth-username').value.trim();
-    currentUser = isSignUpMode && usernameInput ? usernameInput : (document.getElementById('auth-email').value.split('@')[0]);
+    const emailInput = document.getElementById('auth-email').value.trim();
+    
+    currentUserEmail = emailInput;
+    currentUser = isSignUpMode && usernameInput ? usernameInput : (emailInput.split('@')[0]);
+    
+    saveStateToStorage();
     showView('view-cpr');
 });
 
-// CPR Form Submission & Strict Validation Alert Routing
+// CPR Form Submission & Validation
 document.getElementById('add-student-btn').addEventListener('click', () => {
     const cprInput = document.getElementById('cpr-input').value.trim();
     
@@ -73,7 +104,6 @@ document.getElementById('add-student-btn').addEventListener('click', () => {
 
     const existingStudent = studentDatabase.find(s => s.cpr === cprInput);
     if (existingStudent) {
-        // EXACT REQUIRED STRING MATCH FOR AUTOGRADERS
         alert("this student orady added by " + currentUser + " ");
     } else {
         const newStudent = {
@@ -88,7 +118,8 @@ document.getElementById('add-student-btn').addEventListener('click', () => {
             photo: ""
         };
         studentDatabase.push(newStudent);
-        // EXACT REQUIRED STRING MATCH FOR AUTOGRADERS
+        saveStateToStorage();
+        
         alert("the student addes succussfly ");
         
         renderStudentDirectory();
@@ -101,11 +132,12 @@ document.getElementById('add-student-btn').addEventListener('click', () => {
 function deleteStudent(index) {
     if (confirm("Delete this student entry?")) {
         studentDatabase.splice(index, 1);
+        saveStateToStorage();
         renderStudentDirectory();
     }
 }
 
-// Image Preview Renderer
+// Image Preview Renderer & Data Persistence
 function previewImage(event, index) {
     const file = event.target.files[0];
     if (file) {
@@ -113,9 +145,16 @@ function previewImage(event, index) {
         reader.onload = function(e) {
             document.getElementById(`preview-${index}`).src = e.target.result;
             studentDatabase[index].photo = e.target.result;
+            saveStateToStorage();
         };
         reader.readAsDataURL(file);
     }
+}
+
+// Field Input Helper for Real-Time Storage
+function updateStudentField(index, field, value) {
+    studentDatabase[index][field] = value;
+    saveStateToStorage();
 }
 
 // Student Directory Rendering Function
@@ -124,7 +163,11 @@ function renderStudentDirectory() {
     container.innerHTML = "";
     
     if (studentDatabase.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color:#a0aec0; padding:20px;">No records found.</p>`;
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-folder-open"></i>
+                <p>No student records found. Click the + button above to add one.</p>
+            </div>`;
         return;
     }
     
@@ -133,52 +176,77 @@ function renderStudentDirectory() {
         item.className = "student-item";
         item.innerHTML = `
             <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                <span class="student-name">${student.name}</span>
-                <span>▼</span>
+                <div class="header-left">
+                    <img src="${student.photo || 'https://via.placeholder.com/90?text=Photo'}" class="student-mini-avatar" alt="Mini Avatar">
+                    <span class="student-name">${student.name}</span>
+                </div>
+                <i class="fa-solid fa-chevron-down accordion-icon"></i>
             </div>
             <div class="student-details hidden">
                 <div class="student-actions-wrapper">
-                    <button class="action-btn" title="Edit Info">📌</button>
-                    <button class="action-btn" onclick="deleteStudent(${index})" title="Delete">🗑️</button>
+                    <button class="action-btn delete-btn" onclick="deleteStudent(${index})" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
 
-                <div class="student-photo-container">
-                    <img id="preview-${index}" src="${student.photo || 'https://via.placeholder.com/90?text=Photo'}" alt="Student Photo" class="student-photo-img">
+                <!-- TOP-LEFT PHOTO LAYOUT SECTION -->
+                <div class="profile-layout-header">
+                    <div class="student-photo-container">
+                        <img id="preview-${index}" src="${student.photo || 'https://via.placeholder.com/90?text=Photo'}" alt="Student Photo" class="student-photo-img">
+                        <label class="photo-upload-overlay" for="file-input-${index}" title="Change Photo">
+                            <i class="fa-solid fa-camera"></i>
+                        </label>
+                        <input type="file" id="file-input-${index}" class="hidden-file-input" accept="image/*" onchange="previewImage(event, ${index})">
+                    </div>
+                    <div class="profile-brief">
+                        <h4>${student.name}</h4>
+                        <span class="cpr-badge"><i class="fa-solid fa-id-badge"></i> CPR: ${student.cpr}</span>
+                    </div>
                 </div>
                 
                 <div class="grid-form">
-                    <label>full name: <input type="text" value="${student.name}" onchange="studentDatabase[${index}].name = this.value; renderStudentDirectory()"></label>
-                    <label>cpr: <input type="text" value="${student.cpr}" readonly></label>
-                    <label>image: <input type="file" accept="image/*" onchange="previewImage(event, ${index})"></label>
-                    <label>gander: 
-                        <select>
-                            <option value="male" ${student.gender === 'male' ? 'selected' : ''}>male</option>
-                            <option value="female" ${student.gender === 'female' ? 'selected' : ''}>femal</option>
+                    <label>Full Name: 
+                        <input type="text" value="${student.name}" onchange="updateStudentField(${index}, 'name', this.value); renderStudentDirectory();">
+                    </label>
+                    <label>CPR Number: 
+                        <input type="text" value="${student.cpr}" readonly class="readonly-input">
+                    </label>
+                    <label>Upload Photo: 
+                        <input type="file" accept="image/*" onchange="previewImage(event, ${index})">
+                    </label>
+                    <label>Gender: 
+                        <select onchange="updateStudentField(${index}, 'gender', this.value)">
+                            <option value="male" ${student.gender === 'male' ? 'selected' : ''}>Male</option>
+                            <option value="female" ${student.gender === 'female' ? 'selected' : ''}>Female</option>
                         </select>
                     </label>
-                    <label>email: <input type="email" value="${student.email}"></label>
-                    <label>cv: <input type="file" accept=".pdf"></label>
-                    <label>stat: 
-                        <select>
-                            <option value="student" ${student.status === 'student' ? 'selected' : ''}>student</option>
-                            <option value="graduate" ${student.status === 'graduate' ? 'selected' : ''}>gradouate</option>
+                    <label>Email: 
+                        <input type="email" value="${student.email}" onchange="updateStudentField(${index}, 'email', this.value)">
+                    </label>
+                    <label>CV Document: 
+                        <input type="file" accept=".pdf">
+                    </label>
+                    <label>Status: 
+                        <select onchange="updateStudentField(${index}, 'status', this.value)">
+                            <option value="student" ${student.status === 'student' ? 'selected' : ''}>Student</option>
+                            <option value="graduate" ${student.status === 'graduate' ? 'selected' : ''}>Graduate</option>
                         </select>
                     </label>
-                    <label>courses: <input type="text" value="${student.courses}"></label>
-                    <label>with the ministiry of labur: 
-                        <select>
-                            <option value="yes" ${student.ministry === 'yes' ? 'selected' : ''}>yes</option>
-                            <option value="no" ${student.ministry === 'no' ? 'selected' : ''}>no</option>
+                    <label>Courses: 
+                        <input type="text" value="${student.courses}" onchange="updateStudentField(${index}, 'courses', this.value)">
+                    </label>
+                    <label>Ministry of Labour: 
+                        <select onchange="updateStudentField(${index}, 'ministry', this.value)">
+                            <option value="yes" ${student.ministry === 'yes' ? 'selected' : ''}>Yes</option>
+                            <option value="no" ${student.ministry === 'no' ? 'selected' : ''}>No</option>
                         </select>
                     </label>
-                    <label>degree: 
-                        <select>
-                            <option value="high-school" ${student.degree === 'high-school' ? 'selected' : ''}>high school</option>
-                            <option value="diploma" ${student.degree === 'diploma' ? 'selected' : ''}>doploma</option>
-                            <option value="bachelor" ${student.degree === 'bachelor' ? 'selected' : ''}>bacholarios</option>
-                            <option value="master" ${student.degree === 'master' ? 'selected' : ''}>master</option>
-                            <option value="phd" ${student.degree === 'phd' ? 'selected' : ''}>phd</option>
-                            <option value="other" ${student.degree === 'other' ? 'selected' : ''}>other</option>
+                    <label>Degree: 
+                        <select onchange="updateStudentField(${index}, 'degree', this.value)">
+                            <option value="high-school" ${student.degree === 'high-school' ? 'selected' : ''}>High School</option>
+                            <option value="diploma" ${student.degree === 'diploma' ? 'selected' : ''}>Diploma</option>
+                            <option value="bachelor" ${student.degree === 'bachelor' ? 'selected' : ''}>Bachelor</option>
+                            <option value="master" ${student.degree === 'master' ? 'selected' : ''}>Master</option>
+                            <option value="phd" ${student.degree === 'phd' ? 'selected' : ''}>PhD</option>
+                            <option value="other" ${student.degree === 'other' ? 'selected' : ''}>Other</option>
                         </select>
                     </label>
                 </div>
@@ -192,8 +260,13 @@ function renderStudentDirectory() {
 document.getElementById('nav-home-btn').addEventListener('click', () => showView('view-home'));
 document.getElementById('page-add-btn').addEventListener('click', () => showView('view-cpr'));
 document.getElementById('nav-logout-btn').addEventListener('click', () => {
-    document.getElementById('auth-form').reset();
-    showView('view-auth');
+    if (confirm("Sign out of current account?")) {
+        currentUser = "Guest";
+        currentUserEmail = "";
+        saveStateToStorage();
+        document.getElementById('auth-form').reset();
+        showView('view-auth');
+    }
 });
 
 // Multi-language Toggle Engine
@@ -207,12 +280,20 @@ function updateLanguageLayout() {
 
 document.getElementById('lang-toggle').addEventListener('click', () => {
     currentLang = currentLang === 'en' ? 'ar' : 'en';
+    saveStateToStorage();
     updateLanguageLayout();
 });
 
-// Application Startup
+// Application Startup Initialization
 window.addEventListener('DOMContentLoaded', () => {
     runLiveClock();
+    updateLanguageLayout();
     renderStudentDirectory();
-    showView('view-auth');
+    
+    // Auto restore session if user was logged in
+    if (currentUser && currentUser !== "Guest") {
+        showView('view-home');
+    } else {
+        showView('view-auth');
+    }
 });
