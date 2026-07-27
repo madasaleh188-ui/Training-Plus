@@ -2,7 +2,6 @@
 session_start();
 header("Content-Type: application/json");
 require_once "db.php";
-
 $action = $_GET['action'] ?? '';
 
 // Get Students (with Search support)
@@ -135,3 +134,4 @@ if ($action === 'send_message') {
     exit;
 }
 ?>
+
