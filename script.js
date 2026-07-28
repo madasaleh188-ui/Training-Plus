@@ -1,6 +1,6 @@
+// ==========================================
 // 1. FIREBASE CONFIGURATION
-// Import the functions you need from the SDKs you need
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyCzTs_zw28wkHij4Jj9-EEW3XOpQ5si2yc",
   authDomain: "training-plus-212a2.firebaseapp.com",
@@ -11,11 +11,10 @@ const firebaseConfig = {
   measurementId: "G-FX3XRSLD8W"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+// Initialize Firebase (Compat SDK)
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const auth = firebase.auth();
 const db = firebase.firestore();
 
@@ -38,6 +37,36 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
+// ==========================================
+// 2. GOOGLE SIGN-IN FUNCTION
+// ==========================================
+async function signInWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    try {
+        const result = await auth.signInWithPopup(provider);
+        const user = result.user;
+
+        // Save or update user profile details in Firestore
+        await db.collection("users").doc(user.uid).set({
+            username: user.displayName || user.email.split('@')[0],
+            email: user.email,
+            photoURL: user.photoURL || "",
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        console.log("Google Sign-In Successful:", user);
+    } catch (error) {
+        if (error.code !== 'auth/popup-closed-by-user') {
+            console.error("Google Sign-In Error:", error);
+            alert("Google Sign-In failed: " + error.message);
+        }
+    }
+}
+
+// ==========================================
+// 3. AUTHENTICATION HANDLERS
+// ==========================================
 // Switch Auth Tabs
 function switchAuthTab(mode) {
     currentAuthMode = mode;
@@ -60,8 +89,10 @@ function validatePasswordRules() {
 
 function updateRuleState(id, isValid, labelText) {
     const el = document.getElementById(id);
-    el.innerText = (isValid ? "✓ " : "✖ ") + labelText;
-    el.classList.toggle('valid', isValid);
+    if (el) {
+        el.innerText = (isValid ? "✓ " : "✖ ") + labelText;
+        el.classList.toggle('valid', isValid);
+    }
 }
 
 // Register or Login via Firebase
@@ -110,7 +141,9 @@ function logoutUser() {
     auth.signOut();
 }
 
-// Add CPR Record with Firestore Duplicate Check
+// ==========================================
+// 4. CPR RECORD MANAGEMENT
+// ==========================================
 async function addStudentCPR() {
     const cpr = document.getElementById('cpr-input').value.trim();
     if (cpr.length !== 9 || isNaN(cpr)) {
@@ -149,7 +182,9 @@ function resetAndAddAnotherCPR() {
     showView('view-add-cpr');
 }
 
-// Real-Time Student Directory Listener
+// ==========================================
+// 5. STUDENT DIRECTORY & SEARCH
+// ==========================================
 function listenToStudentDirectory() {
     db.collection('students').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
         studentList = [];
@@ -218,7 +253,9 @@ async function deleteStudent(id) {
     }
 }
 
-// Password Change via Firebase
+// ==========================================
+// 6. PASSWORD CHANGE
+// ==========================================
 async function submitPasswordChange() {
     const newPassword = document.getElementById('new-password-input').value.trim();
     if (currentUserData) {
@@ -232,7 +269,9 @@ async function submitPasswordChange() {
     }
 }
 
-// Real-Time Group Chat via Firestore
+// ==========================================
+// 7. REAL-TIME GROUP CHAT
+// ==========================================
 function listenToGroupChat() {
     db.collection('chat_messages').orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
         const box = document.getElementById('chat-messages');
@@ -261,7 +300,9 @@ async function sendChatMessage() {
     input.value = "";
 }
 
-// Navigation & Footer Clock
+// ==========================================
+// 8. NAVIGATION, MODALS & LIVE CLOCK
+// ==========================================
 function showView(id) {
     document.querySelectorAll('.card-view').forEach(v => v.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
@@ -273,10 +314,12 @@ function toggleChatWindow() { document.getElementById('chat-window').classList.t
 
 function runLiveFooterClock() {
     const el = document.getElementById('live-footer-datetime');
-    setInterval(() => {
-        const now = new Date();
-        el.innerText = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + " | " + now.toLocaleTimeString();
-    }, 1000);
+    if (el) {
+        setInterval(() => {
+            const now = new Date();
+            el.innerText = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + " | " + now.toLocaleTimeString();
+        }, 1000);
+    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
