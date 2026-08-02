@@ -159,13 +159,16 @@ async function addStudentCPR() {
             return;
         }
 
+        // Use uid or email consistently
+        const userIdentifier = currentUserData.email || currentUserData.displayName || currentUserData.uid;
+
         // Add new student
         await db.collection('students').add({
             cpr: cpr,
             name: "New Student",
             gender: "male",
             email: "",
-            added_by: currentUserData.displayName || currentUserData.email,
+            added_by: userIdentifier,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
@@ -187,21 +190,23 @@ function resetAndAddAnotherCPR() {
 function listenToStudentDirectory() {
     if (!currentUserData) return;
 
-    // Get current user's name or email
-    const activeUser = currentUserData.displayName || currentUserData.email;
+    const userIdentifier = currentUserData.email || currentUserData.displayName || currentUserData.uid;
 
-    // Filter database so it ONLY fetches records created by this specific user
+    // Listen without orderBy to avoid index issues hiding new entries
     db.collection('students')
-      .where('added_by', '==', activeUser)
-      .orderBy('createdAt', 'desc')
+      .where('added_by', '==', userIdentifier)
       .onSnapshot((snapshot) => {
           studentList = [];
           snapshot.forEach(doc => {
               studentList.push({ id: doc.id, ...doc.data() });
           });
+          
+          // Sort client-side by date
+          studentList.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
           renderStudentDirectory(studentList);
       }, (error) => {
-          console.error("Error fetching user's student directory:", error);
+          console.error("Error fetching students:", error);
       });
 }
 
