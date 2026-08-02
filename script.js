@@ -258,9 +258,10 @@ function renderStudentDirectory(list) {
         }
 
         // CV status display
+        // Replace the old cvDisplay variable with this:
         const cvDisplay = student.cvUrl 
-            ? `<a href="${student.cvUrl}" target="_blank" style="color:var(--accent-slate-blue); font-weight:600; text-decoration:underline; font-size:0.85rem;">📄 View Uploaded CV</a>`
-            : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
+          ? `<a href="${student.cvUrl}" download="${student.cvName || 'Student_CV'}" target="_blank" style="color:var(--accent-slate-blue); font-weight:600; text-decoration:underline; font-size:0.85rem;">📄 View / Download CV</a>`
+          : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
 
         item.innerHTML = `
             <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
@@ -408,36 +409,53 @@ async function removeCourse(studentId, courseIndex) {
 // ==========================================
 async function uploadStudentCV(studentId) {
     const fileInput = document.getElementById(`cv-file-${studentId}`);
-    if (!fileInput || !fileInput.files.length) {
-        alert("Please choose a file first!");
+    
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        alert("Please select a file first!");
         return;
     }
 
     const file = fileInput.files[0];
 
-    try {
-        // Sanitize filename to avoid URL issues
-        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
-        const storageRef = firebase.storage().ref(`cvs/${studentId}_${Date.now()}_${cleanFileName}`);
-        
-        // Upload file
-        const snapshot = await storageRef.put(file);
-        
-        // Get public download URL
-        const downloadUrl = await snapshot.ref.getDownloadURL();
-
-        // Update Firestore student record with CV link
-        await db.collection('students').doc(studentId).update({
-            cvUrl: downloadUrl
-        });
-
-        alert("CV uploaded successfully!");
-    } catch (err) {
-        console.error("Storage upload error:", err);
-        alert("Upload failed: " + err.message + "\n\nMake sure Firebase Storage Rules are set to public in the Firebase Console!");
+    // Optional: Limit file size to 700KB to stay well within Firestore's 1MB limit per document
+    if (file.size > 700 * 1024) {
+        alert("File size is too large! Please upload a PDF or document under 700KB.");
+        return;
     }
-}
 
+    const uploadBtn = document.querySelector(`button[onclick="uploadStudentCV('${studentId}')"]`);
+    if (uploadBtn) uploadBtn.innerText = "Uploading...";
+
+    const reader = new FileReader();
+
+    reader.onload = async function (e) {
+        const base64String = e.target.result;
+
+        try {
+            // Save file data string directly into Firestore
+            await db.collection('students').doc(studentId).update({
+                cvUrl: base64String,
+                cvName: file.name
+            });
+
+            alert("CV uploaded and saved successfully!");
+        } catch (err) {
+            console.error("Firestore CV update error:", err);
+            alert("Failed to save CV: " + err.message);
+        } finally {
+            if (uploadBtn) uploadBtn.innerText = "Upload CV";
+        }
+    };
+
+    reader.onerror = function (error) {
+        console.error("File reading error:", error);
+        alert("Could not read file!");
+        if (uploadBtn) uploadBtn.innerText = "Upload CV";
+    };
+
+    // Read file content
+    reader.readAsDataURL(file);
+}
 // ==========================================
 // 8. PASSWORD CHANGE
 // ==========================================
