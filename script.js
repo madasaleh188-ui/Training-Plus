@@ -226,7 +226,7 @@ function renderStudentDirectory(list) {
         const item = document.createElement('div');
         item.className = "student-item";
 
-        // Build list of courses with timestamp AND delete trash icon
+        // 1. Build list of enrolled courses with timestamp AND styled Delete Course button
         let coursesHTML = "";
         if (student.courses && Array.isArray(student.courses) && student.courses.length > 0) {
             coursesHTML = student.courses.map((c, index) => `
@@ -236,20 +236,11 @@ function renderStudentDirectory(list) {
                         <span style="color:#718096; margin-left:8px; font-size:0.80rem;">(${c.addedAt})</span>
                     </div>
                     <button type="button" onclick="removeCourse('${student.id}', ${index})" 
-                      style="
-                      background: #fff5f5; 
-                      border: 1px solid #feb2b2; 
-                      color: #e53e3e; 
-                      cursor: pointer; 
-                      font-size: 0.75rem; 
-                      padding: 4px 10px; 
-                      border-radius: 100px; 
-                      transition: all 0.2s;
-                      " 
-                      onmouseover="this.style.background='#fee2e2'" 
-                      onmouseout="this.style.background='#fff5f5'"
-                      >
-                      Delete Course
+                        style="background: #fff5f5; border: 1px solid #feb2b2; color: #e53e3e; cursor: pointer; font-size: 0.75rem; padding: 4px 10px; border-radius: 100px; transition: all 0.2s;" 
+                        onmouseover="this.style.background='#fee2e2'" 
+                        onmouseout="this.style.background='#fff5f5'"
+                    >
+                        Delete Course
                     </button>
                 </li>
             `).join("");
@@ -257,29 +248,23 @@ function renderStudentDirectory(list) {
             coursesHTML = `<p style="font-size:0.82rem; color:#a0aec0; margin-top:4px;">No courses added yet.</p>`;
         }
 
-        // cvDisplay variable:
+        // 2. Build CV status link
         const cvDisplay = student.cvUrl 
-          ? `<a href="${student.cvUrl}" download="${student.cvName || 'Student_CV'}" target="_blank" style="color:var(--accent-slate-blue); font-weight:600; text-decoration:underline; font-size:0.85rem;">📄 View / Download CV</a>`
-          : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
+            ? `<a href="${student.cvUrl}" download="${student.cvName || 'Student_CV'}" target="_blank" style="color:var(--accent-slate-blue); font-weight:600; text-decoration:underline; font-size:0.85rem;">📄 View / Download CV</a>`
+            : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
 
+        // 3. Render complete student card HTML
         item.innerHTML = `
             <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
                 <span>${student.name} (${student.cpr})</span>
                 <svg class="arrow-icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                <!-- CV UPLOAD SECTION -->
-                <div style="margin-bottom: 16px;">
-                  <h4 style="margin-bottom: 8px; color: var(--accent-slate-blue);">Student CV Document</h4>
-                  <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                  <input type="file" id="cv-input-${student.id}" accept=".pdf,.doc,.docx" style="font-size: 0.85rem;">
-                  <button type="button" class="primary-btn" onclick="uploadStudentCV('${student.id}')" style="padding: 6px 12px; font-size: 0.85rem;">Upload CV</button>
-                  <div style="margin-left: auto;">${cvDisplay}</div>
-                </div>
             </div>
             <div class="student-details hidden">
                 <div class="student-actions-wrapper">
                     <button class="delete-icon-btn" onclick="deleteStudent('${student.id}')">Delete Student</button>
                 </div>
                 
+                <!-- STUDENT INFO FORM -->
                 <div class="grid-form">
                     <label>Full Name: 
                         <input type="text" value="${student.name || ''}" onchange="updateStudentField('${student.id}', 'name', this.value)">
@@ -304,7 +289,7 @@ function renderStudentDirectory(list) {
                 <div style="margin-bottom: 16px;">
                     <h4 style="margin-bottom: 8px; color: var(--accent-slate-blue);">Student CV Document</h4>
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                        <input type="file" id="cv-file-${student.id}" accept=".pdf,.doc,.docx" style="font-size: 0.85rem;">
+                        <input type="file" id="cv-input-${student.id}" accept=".pdf,.doc,.docx" style="font-size: 0.85rem;">
                         <button type="button" class="primary-btn" onclick="uploadStudentCV('${student.id}')" style="padding: 6px 12px; font-size: 0.85rem;">Upload CV</button>
                         <div style="margin-left: auto;">${cvDisplay}</div>
                     </div>
@@ -320,7 +305,6 @@ function renderStudentDirectory(list) {
                         <button type="button" class="primary-btn" onclick="addCourseToStudent('${student.id}')" style="padding: 6px 14px; font-size: 0.85rem;">+ Add Course</button>
                     </div>
                     
-                    <!-- COURSES LIST OUTPUT -->
                     <ul style="list-style: none; padding: 0; margin: 0;">
                         ${coursesHTML}
                     </ul>
@@ -330,7 +314,6 @@ function renderStudentDirectory(list) {
         container.appendChild(item);
     });
 }
-
 async function updateStudentField(id, field, value) {
     await db.collection('students').doc(id).update({ [field]: value });
 }
