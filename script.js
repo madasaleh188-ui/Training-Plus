@@ -235,8 +235,21 @@ function renderStudentDirectory(list) {
                         <strong style="color: #2d3748;">${c.name}</strong> 
                         <span style="color:#718096; margin-left:8px; font-size:0.80rem;">(${c.addedAt})</span>
                     </div>
-                    <button type="button" onclick="removeCourse('${student.id}', ${index})" title="Delete Course" style="background:none; border:none; color:#e53e3e; cursor:pointer; font-size:1.1rem; padding: 2px 6px; border-radius: 4px;">
-                        🗑️
+                    <button type="button" onclick="removeCourse('${student.id}', ${index})" 
+                      style="
+                      background: #fff5f5; 
+                      border: 1px solid #feb2b2; 
+                      color: #e53e3e; 
+                      cursor: pointer; 
+                      font-size: 0.75rem; 
+                      padding: 4px 10px; 
+                      border-radius: 100px; 
+                      transition: all 0.2s;
+                      " 
+                      onmouseover="this.style.background='#fee2e2'" 
+                      onmouseout="this.style.background='#fff5f5'"
+                      >
+                      Delete Course
                     </button>
                 </li>
             `).join("");
@@ -395,18 +408,25 @@ async function removeCourse(studentId, courseIndex) {
 // ==========================================
 async function uploadStudentCV(studentId) {
     const fileInput = document.getElementById(`cv-file-${studentId}`);
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert("Please select a file to upload first.");
+    if (!fileInput || !fileInput.files.length) {
+        alert("Please choose a file first!");
         return;
     }
 
-    try {
-        const storageRef = firebase.storage().ref(`cvs/${studentId}_${Date.now()}_${file.name}`);
-        const uploadTask = await storageRef.put(file);
-        const downloadUrl = await uploadTask.ref.getDownloadURL();
+    const file = fileInput.files[0];
 
+    try {
+        // Sanitize filename to avoid URL issues
+        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+        const storageRef = firebase.storage().ref(`cvs/${studentId}_${Date.now()}_${cleanFileName}`);
+        
+        // Upload file
+        const snapshot = await storageRef.put(file);
+        
+        // Get public download URL
+        const downloadUrl = await snapshot.ref.getDownloadURL();
+
+        // Update Firestore student record with CV link
         await db.collection('students').doc(studentId).update({
             cvUrl: downloadUrl
         });
@@ -414,7 +434,7 @@ async function uploadStudentCV(studentId) {
         alert("CV uploaded successfully!");
     } catch (err) {
         console.error("Storage upload error:", err);
-        alert("Failed to upload CV: " + err.message + "\n(Ensure Firebase Storage is enabled in your Firebase Console)");
+        alert("Upload failed: " + err.message + "\n\nMake sure Firebase Storage Rules are set to public in the Firebase Console!");
     }
 }
 
