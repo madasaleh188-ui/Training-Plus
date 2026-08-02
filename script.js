@@ -67,76 +67,33 @@ async function signInWithGoogle() {
 // ==========================================
 // 3. AUTHENTICATION HANDLERS
 // ==========================================
-function switchAuthTab(mode) {
-    currentAuthMode = mode;
-    document.getElementById('tab-login').classList.toggle('active', mode === 'login');
-    document.getElementById('tab-register').classList.toggle('active', mode === 'register');
-    document.getElementById('password-rules').classList.toggle('hidden', mode === 'login');
-    document.getElementById('btn-auth-submit').innerText = mode === 'login' ? 'Sign In' : 'Create Account';
-}
-
-function validatePasswordRules() {
-    if (currentAuthMode !== 'register') return;
-    const val = document.getElementById('auth-password').value;
-
-    updateRuleState('rule-length', val.length >= 8, "Minimum 8 characters");
-    updateRuleState('rule-upper', /[A-Z]/.test(val), "At least one uppercase letter (A-Z)");
-    updateRuleState('rule-lower', /[a-z]/.test(val), "At least one lowercase letter (a-z)");
-    updateRuleState('rule-number', /\d/.test(val), "At least one number (0-9)");
-}
-
-function updateRuleState(id, isValid, labelText) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.innerText = (isValid ? "✓ " : "✖ ") + labelText;
-        el.classList.toggle('valid', isValid);
-    }
-}
-
-document.getElementById('auth-form').addEventListener('submit', async (e) => {
+// SIGN IN HANDLER
+document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const username = document.getElementById('auth-username').value.trim();
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value.trim();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
 
-    if (currentAuthMode === 'register') {
-        const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-        if (!regex.test(password)) {
-            alert("Password must be at least 8 characters with uppercase, lowercase, and a number.");
-            return;
-        }
-
-        try {
-            const userCred = await auth.createUserWithEmailAndPassword(email, password);
-            await userCred.user.updateProfile({ displayName: username });
-            alert("Account created successfully!");
-        } catch (err) {
-            alert(err.message);
-        }
-    } else {
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-        } catch (err) {
-            alert("Login failed: " + err.message);
-        }
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        alert("Logged in successfully!");
+    } catch (err) {
+        alert("Sign In Failed: " + err.message);
     }
 });
 
-function updateUserUI(isLoggedIn) {
-    document.getElementById('search-box').classList.toggle('hidden', !isLoggedIn);
-    document.getElementById('account-btn').classList.toggle('hidden', !isLoggedIn);
-    document.getElementById('logout-btn').classList.toggle('hidden', !isLoggedIn);
+// CREATE ACCOUNT HANDLER
+document.getElementById('signup-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
 
-    if (isLoggedIn && currentUserData) {
-        document.getElementById('modal-userid').innerText = currentUserData.uid;
-        document.getElementById('modal-username').innerText = currentUserData.displayName || "User";
-        document.getElementById('modal-email').innerText = currentUserData.email;
+    try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        alert("Account created successfully!");
+    } catch (err) {
+        alert("Sign Up Failed: " + err.message);
     }
-}
-
-function logoutUser() {
-    auth.signOut();
-}
+});
 
 // ==========================================
 // 4. CPR RECORD MANAGEMENT
