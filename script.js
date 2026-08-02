@@ -190,24 +190,29 @@ function resetAndAddAnotherCPR() {
 function listenToStudentDirectory() {
     if (!currentUserData) return;
 
-    const userIdentifier = currentUserData.email || currentUserData.displayName || currentUserData.uid;
+    // Get current user's email or username
+    const activeEmail = currentUserData.email;
+    const activeName = currentUserData.displayName;
 
-    // Listen without orderBy to avoid index issues hiding new entries
-    db.collection('students')
-      .where('added_by', '==', userIdentifier)
-      .onSnapshot((snapshot) => {
-          studentList = [];
-          snapshot.forEach(doc => {
-              studentList.push({ id: doc.id, ...doc.data() });
-          });
-          
-          // Sort client-side by date
-          studentList.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    // Fetch students without database restrictions first
+    db.collection('students').onSnapshot((snapshot) => {
+        studentList = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            
+            // Debug log to check what is in your database
+            console.log("Student in DB:", data.cpr, "| Added By:", data.added_by);
 
-          renderStudentDirectory(studentList);
-      }, (error) => {
-          console.error("Error fetching students:", error);
-      });
+            // Match either email or username
+            if (data.added_by === activeEmail || data.added_by === activeName) {
+                studentList.push({ id: doc.id, ...data });
+            }
+        });
+
+        renderStudentDirectory(studentList);
+    }, (error) => {
+        console.error("Error fetching students:", error);
+    });
 }
 
 function handleSearch() {
