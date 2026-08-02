@@ -1,124 +1,157 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Training Plus Portal</title>
-  <link rel="stylesheet" href="style.css">
-  
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- SheetJS Library for Excel Exports -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Plus Institute - Firebase</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase SDKs (v9/v10 Compatibility Mode for easy JS usage) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-  <!-- Google Sign-In Wall Overlay -->
-  <div id="auth-overlay" class="auth-overlay">
-    <div class="auth-card">
-      <div class="auth-icon"><i class="fa-solid fa-graduation-cap"></i></div>
-      <h2 data-i18n="welcome">Welcome to Training Plus</h2>
-      <p data-i18n="loginPrompt">Please sign in with Google to access your dashboard.</p>
-      
-      <button id="btn-google-login" class="btn-google">
-        <i class="fa-brands fa-google"></i> <span data-i18n="signInGoogle">Sign in with Google</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Main Portal Layout (Locked until authenticated) -->
-  <div id="app" class="app-container hidden">
-    
-    <!-- Top Navigation Header -->
-    <header class="navbar">
-      <div class="nav-left">
-        <button id="btn-home" class="nav-btn">
-          <i class="fa-solid fa-house"></i> <span data-i18n="home">Home</span>
-        </button>
-        <!-- Download All Students Data in Excel Style -->
-        <button id="btn-download-all" class="nav-btn export-btn">
-          <i class="fa-solid fa-file-excel"></i> <span data-i18n="downloadAll">Export All (Excel)</span>
-        </button>
-      </div>
-
-      <div class="nav-right">
-        <!-- AR / EN Language Toggle Button -->
-        <button id="btn-lang-toggle" class="lang-btn"><i class="fa-solid fa-globe"></i> AR / EN</button>
-        <button id="btn-signout" class="nav-btn danger-btn">
-          <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="signOut">Sign Out</span>
-        </button>
-      </div>
+    <header class="top-nav">
+        <div class="nav-left">
+            <button id="btn-home" class="nav-btn" onclick="showView('view-home')">Home</button>
+            <div class="search-container hidden" id="search-box">
+                <input type="text" id="search-input" placeholder="Search by name or CPR..." oninput="handleSearch()">
+            </div>
+        </div>
+        <div class="nav-controls">
+            <button id="account-btn" class="nav-btn hidden" onclick="openAccountModal()">Account</button>
+            <button id="logout-btn" class="nav-btn logout-btn hidden" onclick="logoutUser()">Logout</button>
+        </div>
     </header>
 
-    <!-- Main Workspace -->
-    <main class="main-content">
-      
-      <!-- Student Management Panel -->
-      <section class="card student-section">
-        <h2 data-i18n="addStudentHeader"><i class="fa-solid fa-user-plus"></i> Add New Student</h2>
-        <form id="student-form" class="form-grid">
-          <input type="text" id="student-name" placeholder="Student Name" required>
-          <input type="email" id="student-email" placeholder="Student Email" required>
-          <input type="text" id="student-course" placeholder="Course / Track" required>
-          <button type="submit" class="btn-primary" data-i18n="addStudentBtn">Add Student</button>
-        </form>
-
-        <h2 data-i18n="myStudentsHeader"><i class="fa-solid fa-users"></i> My Students</h2>
-        <div class="table-container">
-          <table id="students-table">
-            <thead>
-              <tr>
-                <th data-i18n="thName">Name</th>
-                <th data-i18n="thEmail">Email</th>
-                <th data-i18n="thCourse">Course</th>
-                <th data-i18n="thActions">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="students-list">
-              <!-- Dynamically Populated Rows -->
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Private Chat & Direct Student Sharing Panel -->
-      <section class="card chat-section">
-        <h2 data-i18n="chatHeader"><i class="fa-solid fa-comments"></i> Private Direct Messages</h2>
-        <div class="chat-container">
-          
-          <!-- Users List Sidebar -->
-          <div class="chat-sidebar">
-            <p class="sidebar-title" data-i18n="selectUserTitle">Select Team Member</p>
-            <ul id="users-ul" class="users-list"></ul>
-          </div>
-
-          <!-- Private Chat Window & Drop Area -->
-          <div class="chat-window" id="chat-window">
-            <div class="chat-header" id="chat-header-title" data-i18n="selectUserHint">
-              Select a user from the list to open a private chat
-            </div>
-            
-            <div class="chat-messages" id="chat-messages">
-              <!-- Chat Bubbles & Shared Student Cards -->
+    <main>
+        <!-- Auth View -->
+        <section id="view-auth" class="card-view">
+            <div class="tab-header">
+                <button id="tab-login" class="tab-btn active" onclick="switchAuthTab('login')">Sign In</button>
+                <button id="tab-register" class="tab-btn" onclick="switchAuthTab('register')">Create Account</button>
             </div>
 
-            <div class="chat-input-area">
-              <input type="text" id="chat-input" placeholder="Type a message or drag a student here..." disabled>
-              <button id="btn-send-msg" class="btn-primary" disabled><i class="fa-solid fa-paper-plane"></i></button>
+            <form id="auth-form" class="standard-form">
+                <label>
+                    <span>Username / Display Name:</span>
+                    <input type="text" id="auth-username" required placeholder="Enter username">
+                </label>
+                <label id="email-group">
+                    <span>Email:</span>
+                    <input type="email" id="auth-email" required placeholder="Enter email">
+                </label>
+                <label>
+                    <span>Password:</span>
+                    <input type="password" id="auth-password" required placeholder="Enter password" oninput="validatePasswordRules()">
+                </label>
+
+                <!-- Real-time Password Rules -->
+                <div id="password-rules" class="password-rules-box hidden">
+                    <p id="rule-length" class="rule-item">✖ Minimum 8 characters</p>
+                    <p id="rule-upper" class="rule-item">✖ At least one uppercase letter (A-Z)</p>
+                    <p id="rule-lower" class="rule-item">✖ At least one lowercase letter (a-z)</p>
+                    <p id="rule-number" class="rule-item">✖ At least one number (0-9)</p>
+                </div>
+
+                <button type="submit" class="primary-btn" id="btn-auth-submit">Sign In</button>
+                <div class="divider" style="text-align: center; margin: 12px 0; color: #a0aec0; font-size: 0.85rem;">OR</div>
+
+                <button type="button" id="btn-google-auth" class="secondary-btn" onclick="signInWithGoogle()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                     </svg>
+                     Sign in with Google
+                </button>
+            </form>
+        </section>
+
+        <!-- Home / Directory View -->
+        <section id="view-home" class="card-view hidden">
+            <div class="dashboard-header">
+                <h2>Student Directory</h2>
+                <button class="primary-btn" onclick="showView('view-add-cpr')">+ Add New CPR</button>
             </div>
-          </div>
+            <div id="student-container" class="student-list"></div>
+        </section>
 
-        </div>
-      </section>
+        <!-- CPR Entry View -->
+        <section id="view-add-cpr" class="card-view hidden">
+            <h2>Register New CPR</h2>
+            <p class="subtitle">Enter a 9-digit CPR number to add a student.</p>
+            <form id="cpr-form" class="standard-form" onsubmit="return false;">
+                <label>
+                    <span>CPR Number (9 Digits):</span>
+                    <input type="text" id="cpr-input" maxlength="9" required placeholder="e.g. 980123456">
+                </label>
+                <div class="button-group">
+                    <button type="button" class="primary-btn" id="add-student-btn" onclick="addStudentCPR()">Submit Record</button>
+                    <button type="button" class="secondary-btn" onclick="showView('view-home')">Done / Back</button>
+                </div>
+            </form>
+        </section>
 
+        <!-- CPR Success View -->
+        <section id="view-cpr-success" class="card-view hidden">
+            <div class="success-box">
+                <div class="check-icon">✓</div>
+                <h2>CPR Added Successfully!</h2>
+                <p class="subtitle">Would you like to add another student CPR record?</p>
+                <div class="button-group center-btn">
+                    <button class="primary-btn" onclick="resetAndAddAnotherCPR()">+ Add Another CPR</button>
+                    <button class="secondary-btn" onclick="showView('view-home')">Go to Directory</button>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <!-- Toast Notification Popup -->
-    <div id="toast" class="toast hidden"></div>
-  </div>
+    <!-- Account Details Modal -->
+    <div id="account-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAccountModal()">&times;</span>
+            <h3 style="color: var(--accent-slate-blue); margin-bottom: 12px;">User Account</h3>
+            <p><strong>User ID:</strong> <span id="modal-userid">--</span></p>
+            <p><strong>Username:</strong> <span id="modal-username">--</span></p>
+            <p style="margin-bottom: 16px;"><strong>Email:</strong> <span id="modal-email">--</span></p>
+            
+            <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--border-color);">
+            
+            <h4 style="margin-bottom: 8px;">Change Password</h4>
+            <form id="change-pass-form" onsubmit="return false;">
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.85rem;">
+                    New Password:
+                    <input type="password" id="new-password-input" required style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+                </label>
+                <button type="button" class="primary-btn" onclick="submitPasswordChange()" style="margin-top:10px; width:100%;">Update Password</button>
+            </form>
+        </div>
+    </div>
 
-  <!-- Firebase & Main Application Logic -->
-  <script type="module" src="script.js"></script>
+    <!-- Floating Group Chat -->
+    <div id="chat-widget">
+        <button id="chat-toggle-btn" class="chat-fab" onclick="toggleChatWindow()">💬</button>
+        <div id="chat-window" class="chat-box hidden">
+            <div class="chat-header">
+                <span>Team Group Chat</span>
+                <span style="cursor:pointer;" onclick="toggleChatWindow()">&times;</span>
+            </div>
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-row">
+                <input type="text" id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bottom-footer">
+        <p id="live-footer-datetime">Loading date & time...</p>
+    </footer>
+
+    <script src="script.js"></script>
 </body>
 </html>
