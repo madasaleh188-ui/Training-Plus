@@ -236,6 +236,25 @@ function renderStudentDirectory(list) {
     list.forEach((student) => {
         const item = document.createElement('div');
         item.className = "student-item";
+
+        // Render enrolled courses with Timestamp
+        let coursesHTML = "";
+        if (student.courses && Array.isArray(student.courses) && student.courses.length > 0) {
+            coursesHTML = student.courses.map((c, index) => `
+                <li style="display:flex; justify-content:space-between; align-items:center; background:#f0f4f2; padding:6px 10px; border-radius:6px; margin-bottom:6px; font-size:0.85rem;">
+                    <span><strong>${c.name}</strong> <small style="color:#718096; margin-left:8px;">(${c.addedAt})</small></span>
+                    <button type="button" onclick="removeCourse('${student.id}', ${index})" style="background:none; border:none; color:#e57373; cursor:pointer; font-size:1.1rem; font-weight:bold;">&times;</button>
+                </li>
+            `).join("");
+        } else {
+            coursesHTML = `<p style="font-size:0.82rem; color:#a0aec0; margin-top:4px;">No courses added yet.</p>`;
+        }
+
+        // CV status display
+        const cvDisplay = student.cvUrl 
+            ? `<a href="${student.cvUrl}" target="_blank" style="color:var(--accent-slate-blue); font-weight:600; text-decoration:underline; font-size:0.85rem;">📄 View Uploaded CV</a>`
+            : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
+
         item.innerHTML = `
             <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
                 <span>${student.name} (${student.cpr})</span>
@@ -243,19 +262,51 @@ function renderStudentDirectory(list) {
             </div>
             <div class="student-details hidden">
                 <div class="student-actions-wrapper">
-                    <button class="delete-icon-btn" onclick="deleteStudent('${student.id}')">Delete</button>
+                    <button class="delete-icon-btn" onclick="deleteStudent('${student.id}')">Delete Student</button>
                 </div>
+                
                 <div class="grid-form">
-                    <label>Full Name: <input type="text" value="${student.name || ''}" onchange="updateStudentField('${student.id}', 'name', this.value)"></label>
-                    <label>CPR: <input type="text" value="${student.cpr}" readonly></label>
-                    <label>Added By: <input type="text" value="${student.added_by || ''}" readonly></label>
+                    <label>Full Name: 
+                        <input type="text" value="${student.name || ''}" onchange="updateStudentField('${student.id}', 'name', this.value)">
+                    </label>
+                    <label>CPR: 
+                        <input type="text" value="${student.cpr}" readonly>
+                    </label>
                     <label>Gender: 
                         <select onchange="updateStudentField('${student.id}', 'gender', this.value)">
                             <option value="male" ${student.gender === 'male' ? 'selected' : ''}>Male</option>
                             <option value="female" ${student.gender === 'female' ? 'selected' : ''}>Female</option>
                         </select>
                     </label>
-                    <label>Email: <input type="email" value="${student.email || ''}" onchange="updateStudentField('${student.id}', 'email', this.value)"></label>
+                    <label>Email: 
+                        <input type="email" value="${student.email || ''}" onchange="updateStudentField('${student.id}', 'email', this.value)">
+                    </label>
+                </div>
+
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border-color);">
+
+                <!-- CV UPLOAD SECTION -->
+                <div style="margin-bottom: 16px;">
+                    <h4 style="margin-bottom: 8px; color: var(--accent-slate-blue);">Student CV Document</h4>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <input type="file" id="cv-file-${student.id}" accept=".pdf,.doc,.docx" style="font-size: 0.85rem;">
+                        <button type="button" class="primary-btn" onclick="uploadStudentCV('${student.id}')" style="padding: 6px 12px; font-size: 0.85rem;">Upload CV</button>
+                        <div style="margin-left: auto;">${cvDisplay}</div>
+                    </div>
+                </div>
+
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border-color);">
+
+                <!-- COURSES WITH DATE & TIME SECTION -->
+                <div>
+                    <h4 style="margin-bottom: 8px; color: var(--accent-slate-blue);">Enrolled Courses</h4>
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <input type="text" id="course-input-${student.id}" placeholder="Enter course name (e.g. Web Development)" style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem;">
+                        <button type="button" class="primary-btn" onclick="addCourseToStudent('${student.id}')" style="padding: 6px 14px; font-size: 0.85rem;">+ Add Course</button>
+                    </div>
+                    <ul style="list-style: none; padding: 0;">
+                        ${coursesHTML}
+                    </ul>
                 </div>
             </div>
         `;
