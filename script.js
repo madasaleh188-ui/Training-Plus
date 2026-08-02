@@ -186,13 +186,24 @@ function resetAndAddAnotherCPR() {
 // 5. STUDENT DIRECTORY & SEARCH
 // ==========================================
 function listenToStudentDirectory() {
-    db.collection('students').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
-        studentList = [];
-        snapshot.forEach(doc => {
-            studentList.push({ id: doc.id, ...doc.data() });
-        });
-        renderStudentDirectory(studentList);
-    });
+    if (!currentUserData) return;
+
+    // Get current user's name or email
+    const activeUser = currentUserData.displayName || currentUserData.email;
+
+    // Filter database so it ONLY fetches records created by this specific user
+    db.collection('students')
+      .where('added_by', '==', activeUser)
+      .orderBy('createdAt', 'desc')
+      .onSnapshot((snapshot) => {
+          studentList = [];
+          snapshot.forEach(doc => {
+              studentList.push({ id: doc.id, ...doc.data() });
+          });
+          renderStudentDirectory(studentList);
+      }, (error) => {
+          console.error("Error fetching user's student directory:", error);
+      });
 }
 
 function handleSearch() {
