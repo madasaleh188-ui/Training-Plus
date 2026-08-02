@@ -1,13 +1,39 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { 
+  getFirestore, collection, addDoc, doc, setDoc, getDocs, query, where, 
+  onSnapshot, deleteDoc, orderBy, serverTimestamp, or, and 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// REPLACE THIS WITH YOUR FIREBASE CONFIG FROM FIREBASE CONSOLE
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+
 let currentUser = null;
 let activeChatUserId = null;
 let currentLang = 'en';
 let studentsData = [];
+let chatUnsubscribe = null;
 
 // Localization Dictionary
 const translations = {
   en: {
     welcome: "Welcome to Training Plus",
     loginPrompt: "Please sign in with Google to access your dashboard.",
+    signInGoogle: "Sign in with Google",
     home: "Home",
     downloadAll: "Export All (Excel)",
     signOut: "Sign Out",
@@ -30,6 +56,7 @@ const translations = {
   ar: {
     welcome: "مرحباً بك في ترينينج بلس",
     loginPrompt: "يرجى تسجيل الدخول باستخدام جوجل للوصول إلى حسابك.",
+    signInGoogle: "تسجيل الدخول بواسطة جوجل",
     home: "الرئيسية",
     downloadAll: "تصدير الكل (إكسيل)",
     signOut: "تسجيل الخروج",
@@ -51,98 +78,90 @@ const translations = {
   }
 };
 
-// Check Existing Session on Page Load
-document.addEventListener('DOMContentLoaded', () => {
-  fetch('api.php?action=check_session')
-    .then(res => res.json())
-    .then(data => {
-      if (data.authenticated) {
-        currentUser = data.user;
-        document.getElementById('auth-overlay').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
-        initApp();
-      }
-    });
-});
+// Listen to Auth State Changes
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    
+    // Save/Update user profile in Firestore
+    await setDoc(doc(db, "users", user.uid), {
+      uid: user.uid,
+      name: user.displayName,
+      email: user.email,
+      photoURL: user.photoURL
+    }, { merge: true });
 
-// Google Authentication Callback
-function handleCredentialResponse(response) {
-  fetch('api.php?action=google_login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: response.credential })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      currentUser = data.user;
-      document.getElementById('auth-overlay').classList.add('hidden');
-      document.getElementById('app').classList.remove('hidden');
-      initApp();
-    } else {
-      showToast(data.message || 'Authentication failed', true);
-    }
-  });
-}
-
-function signOut() {
-  fetch('api.php?action=logout').then(() => {
+    document.getElementById('auth-overlay').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    initApp();
+  } else {
     currentUser = null;
     document.getElementById('app').classList.add('hidden');
     document.getElementById('auth-overlay').classList.remove('hidden');
-  });
-}
+  }
+});
 
+// Setup Initial App Listeners
 function initApp() {
-  loadStudents();
+  listenToMyStudents();
   loadUsers();
   setupEventListeners();
+  setupDragAndDrop();
 }
 
 function setupEventListeners() {
+  // Google Sign-In Button
+  document.getElementById('btn-google-login').onclick = () => {
+    signInWithPopup(auth, googleProvider).catch(err => showToast(err.message, true));
+  };
+
+  // Sign Out Button
+  document.getElementById('btn-signout').onclick = () => {
+    if (chatUnsubscribe) chatUnsubscribe();
+    signOut(auth);
+  };
+
   // Language Toggle Switcher (AR / EN)
-  document.getElementById('btn-lang-toggle').addEventListener('click', () => {
+  document.getElementById('btn-lang-toggle').onclick = () => {
     currentLang = currentLang === 'en' ? 'ar' : 'en';
     document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = currentLang;
     applyLanguage();
-  });
+  };
 
   // Add Student Form Submission
-  document.getElementById('student-form').addEventListener('submit', (e) => {
+  document.getElementById('student-form').onsubmit = async (e) => {
     e.preventDefault();
     const name = document.getElementById('student-name').value;
     const email = document.getElementById('student-email').value;
     const course = document.getElementById('student-course').value;
 
-    fetch('api.php?action=add_student', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, course })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        showToast(translations[currentLang].addedSuccess);
-        document.getElementById('student-form').reset();
-        loadStudents();
-      }
-    });
-  });
+    try {
+      await addDoc(collection(db, "students"), {
+        userId: currentUser.uid,
+        name,
+        email,
+        course,
+        createdAt: serverTimestamp()
+      });
+      showToast(translations[currentLang].addedSuccess);
+      document.getElementById('student-form').reset();
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  };
 
   // Export All Students to Excel Button
-  document.getElementById('btn-download-all').addEventListener('click', () => {
+  document.getElementById('btn-download-all').onclick = () => {
     if (studentsData.length === 0) return;
     exportToExcel(studentsData, 'My_Students_Data.xlsx');
-  });
+  };
 
-  // Send Message Button
-  document.getElementById('btn-send-msg').addEventListener('click', sendMessage);
-  
-  // Send Message on Pressing Enter
-  document.getElementById('chat-input').addEventListener('keypress', (e) => {
+  // Send Chat Message Button
+  document.getElementById('btn-send-msg').onclick = sendMessage;
+  document.getElementById('chat-input').onkeypress = (e) => {
     if (e.key === 'Enter') sendMessage();
-  });
+  };
 }
 
 function applyLanguage() {
@@ -154,53 +173,57 @@ function applyLanguage() {
   });
 }
 
-// Fetch Isolated Private Students
-function loadStudents() {
-  fetch('api.php?action=get_students')
-    .then(res => res.json())
-    .then(data => {
-      studentsData = data;
-      const tbody = document.getElementById('students-list');
-      tbody.innerHTML = '';
+// --- PRIVATE STUDENTS REALTIME SYNC ---
+function listenToMyStudents() {
+  const q = query(
+    collection(db, "students"), 
+    where("userId", "==", currentUser.uid)
+  );
 
-      data.forEach(student => {
-        const tr = document.createElement('tr');
-        tr.setAttribute('draggable', 'true');
-        tr.ondragstart = (e) => e.dataTransfer.setData("text/plain", JSON.stringify(student));
+  onSnapshot(q, (snapshot) => {
+    studentsData = [];
+    const tbody = document.getElementById('students-list');
+    tbody.innerHTML = '';
 
-        tr.innerHTML = `
-          <td>${escapeHtml(student.name)}</td>
-          <td>${escapeHtml(student.email)}</td>
-          <td>${escapeHtml(student.course)}</td>
-          <td class="action-cells">
-            <!-- Single Excel Download Icon beside Delete Button -->
-            <button class="icon-btn download-btn" onclick="exportSingleStudent(${student.id})" title="Download Excel">
-              <i class="fa-solid fa-file-excel"></i>
-            </button>
-            <button class="icon-btn delete-btn" onclick="deleteStudent(${student.id})" title="Delete">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+    snapshot.forEach((docSnap) => {
+      const student = { id: docSnap.id, ...docSnap.data() };
+      studentsData.push(student);
+
+      const tr = document.createElement('tr');
+      tr.setAttribute('draggable', 'true');
+      tr.ondragstart = (e) => e.dataTransfer.setData("text/plain", JSON.stringify(student));
+
+      tr.innerHTML = `
+        <td>${escapeHtml(student.name)}</td>
+        <td>${escapeHtml(student.email)}</td>
+        <td>${escapeHtml(student.course)}</td>
+        <td class="action-cells">
+          <button class="icon-btn download-btn" data-id="${student.id}" title="Download Excel">
+            <i class="fa-solid fa-file-excel"></i>
+          </button>
+          <button class="icon-btn delete-btn" data-id="${student.id}" title="Delete">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      `;
+
+      tr.querySelector('.download-btn').onclick = () => exportSingleStudent(student.id);
+      tr.querySelector('.delete-btn').onclick = () => deleteStudent(student.id);
+
+      tbody.appendChild(tr);
     });
-}
-
-function deleteStudent(id) {
-  fetch('api.php?action=delete_student', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id })
-  })
-  .then(res => res.json())
-  .then(() => {
-    showToast(translations[currentLang].deletedSuccess);
-    loadStudents();
   });
 }
 
-// Download Single Student Data to Excel
+async function deleteStudent(id) {
+  try {
+    await deleteDoc(doc(db, "students", id));
+    showToast(translations[currentLang].deletedSuccess);
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
 function exportSingleStudent(id) {
   const student = studentsData.find(s => s.id === id);
   if (student) {
@@ -208,10 +231,8 @@ function exportSingleStudent(id) {
   }
 }
 
-// Excel Sheet Exporter using SheetJS
 function exportToExcel(dataArray, filename) {
   const exportFormat = dataArray.map(item => ({
-    "Student ID": item.id,
     "Full Name": item.name,
     "Email Address": item.email,
     "Course / Track": item.course
@@ -224,124 +245,138 @@ function exportToExcel(dataArray, filename) {
   showToast(translations[currentLang].downloadSuccess);
 }
 
-// --- 1-on-1 Chat & Drag and Drop Sharing ---
+// --- 1-ON-1 REALTIME CHAT & DRAG-AND-DROP ---
+async function loadUsers() {
+  const querySnapshot = await getDocs(collection(db, "users"));
+  const ul = document.getElementById('users-ul');
+  ul.innerHTML = '';
 
-function loadUsers() {
-  fetch('api.php?action=get_users')
-    .then(res => res.json())
-    .then(users => {
-      const ul = document.getElementById('users-ul');
-      ul.innerHTML = '';
-      
-      users.filter(u => u.id !== currentUser.id).forEach(user => {
-        const li = document.createElement('li');
-        li.id = `user-item-${user.id}`;
-        li.innerHTML = `<i class="fa-solid fa-user"></i> ${escapeHtml(user.name)}`;
-        li.onclick = () => openPrivateChat(user);
-        ul.appendChild(li);
-      });
-    });
+  querySnapshot.forEach((docSnap) => {
+    const user = docSnap.data();
+    if (user.uid !== currentUser.uid) {
+      const li = document.createElement('li');
+      li.id = `user-item-${user.uid}`;
+      li.innerHTML = `<i class="fa-solid fa-user"></i> ${escapeHtml(user.name)}`;
+      li.onclick = () => openPrivateChat(user);
+      ul.appendChild(li);
+    }
+  });
 }
 
 function openPrivateChat(user) {
-  activeChatUserId = user.id;
-  
-  // Highlight Selected User
+  activeChatUserId = user.uid;
+
   document.querySelectorAll('.users-list li').forEach(el => el.classList.remove('active'));
-  document.getElementById(`user-item-${user.id}`).classList.add('active');
+  document.getElementById(`user-item-${user.uid}`).classList.add('active');
 
   document.getElementById('chat-header-title').innerText = `${user.name}`;
   document.getElementById('chat-input').disabled = false;
   document.getElementById('btn-send-msg').disabled = false;
-  
-  loadMessages();
+
+  listenToMessages();
 }
 
-function loadMessages() {
-  if (!activeChatUserId) return;
-  
-  fetch(`api.php?action=get_messages&receiver_id=${activeChatUserId}`)
-    .then(res => res.json())
-    .then(messages => {
-      const chatBox = document.getElementById('chat-messages');
-      chatBox.innerHTML = '';
+function listenToMessages() {
+  if (chatUnsubscribe) chatUnsubscribe();
 
-      messages.forEach(msg => {
-        const bubble = document.createElement('div');
-        const isMine = msg.sender_id === currentUser.id;
-        bubble.className = `chat-bubble ${isMine ? 'mine' : 'other'}`;
+  const q = query(
+    collection(db, "messages"),
+    or(
+      and(where("senderId", "==", currentUser.uid), where("receiverId", "==", activeChatUserId)),
+      and(where("senderId", "==", activeChatUserId), where("receiverId", "==", currentUser.uid))
+    ),
+    orderBy("createdAt", "asc")
+  );
 
-        if (msg.student_payload) {
-          const student = JSON.parse(msg.student_payload);
-          bubble.innerHTML = `
-            <div class="shared-card">
-              <h4><i class="fa-solid fa-id-card"></i> ${escapeHtml(student.name)}</h4>
-              <p>${escapeHtml(student.email)} | ${escapeHtml(student.course)}</p>
-              ${!isMine ? `<button class="btn-small" onclick='importSharedStudent(${JSON.stringify(msg.student_payload)})'>${translations[currentLang].addToList}</button>` : ''}
-            </div>
-          `;
-        } else {
-          bubble.innerText = msg.message;
+  chatUnsubscribe = onSnapshot(q, (snapshot) => {
+    const chatBox = document.getElementById('chat-messages');
+    chatBox.innerHTML = '';
+
+    snapshot.forEach((docSnap) => {
+      const msg = docSnap.data();
+      const bubble = document.createElement('div');
+      const isMine = msg.senderId === currentUser.uid;
+      bubble.className = `chat-bubble ${isMine ? 'mine' : 'other'}`;
+
+      if (msg.studentPayload) {
+        const student = JSON.parse(msg.studentPayload);
+        bubble.innerHTML = `
+          <div class="shared-card">
+            <h4><i class="fa-solid fa-id-card"></i> ${escapeHtml(student.name)}</h4>
+            <p>${escapeHtml(student.email)} | ${escapeHtml(student.course)}</p>
+            ${!isMine ? `<button class="btn-small btn-import">${translations[currentLang].addToList}</button>` : ''}
+          </div>
+        `;
+
+        if (!isMine) {
+          bubble.querySelector('.btn-import').onclick = () => importSharedStudent(msg.studentPayload);
         }
-        chatBox.appendChild(bubble);
-      });
-      
-      chatBox.scrollTop = chatBox.scrollHeight;
+      } else {
+        bubble.innerText = msg.message;
+      }
+      chatBox.appendChild(bubble);
     });
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
 }
 
-function sendMessage() {
+async function sendMessage() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text || !activeChatUserId) return;
 
-  fetch('api.php?action=send_message', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ receiver_id: activeChatUserId, message: text })
-  }).then(() => {
+  try {
+    await addDoc(collection(db, "messages"), {
+      senderId: currentUser.uid,
+      receiverId: activeChatUserId,
+      message: text,
+      studentPayload: null,
+      createdAt: serverTimestamp()
+    });
     input.value = '';
-    loadMessages();
-  });
+  } catch (err) {
+    showToast(err.message, true);
+  }
 }
 
-// Drag & Drop Handlers
-function allowDrop(e) { e.preventDefault(); }
+function setupDragAndDrop() {
+  const chatWindow = document.getElementById('chat-window');
+  chatWindow.ondragover = (e) => e.preventDefault();
+  
+  chatWindow.ondrop = async (e) => {
+    e.preventDefault();
+    if (!activeChatUserId) return;
 
-function dropStudent(e) {
-  e.preventDefault();
-  if (!activeChatUserId) return;
+    const rawData = e.dataTransfer.getData("text/plain");
+    if (!rawData) return;
 
-  const rawData = e.dataTransfer.getData("text/plain");
-  if (!rawData) return;
-
-  fetch('api.php?action=send_message', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      receiver_id: activeChatUserId,
+    await addDoc(collection(db, "messages"), {
+      senderId: currentUser.uid,
+      receiverId: activeChatUserId,
       message: "Shared a student card",
-      student_payload: rawData
-    })
-  }).then(() => loadMessages());
+      studentPayload: rawData,
+      createdAt: serverTimestamp()
+    });
+  };
 }
 
-// "Add to My List" Handler for Shared Cards
-function importSharedStudent(payloadStr) {
+async function importSharedStudent(payloadStr) {
   const student = JSON.parse(payloadStr);
-  fetch('api.php?action=add_student', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: student.name, email: student.email, course: student.course })
-  })
-  .then(res => res.json())
-  .then(() => {
+  try {
+    await addDoc(collection(db, "students"), {
+      userId: currentUser.uid,
+      name: student.name,
+      email: student.email,
+      course: student.course,
+      createdAt: serverTimestamp()
+    });
     showToast(translations[currentLang].studentImported);
-    loadStudents();
-  });
+  } catch (err) {
+    showToast(err.message, true);
+  }
 }
 
-// Helper Toast Alert
 function showToast(msg, isError = false) {
   const toast = document.getElementById('toast');
   toast.innerText = msg;
