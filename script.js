@@ -1,5 +1,6 @@
 // ==========================================
 // 1. FIREBASE CONFIGURATION
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyCzTs_zw28wkHij4Jj9-EEW3XOpQ5si2yc",
   authDomain: "training-plus-212a2.firebaseapp.com",
@@ -66,7 +67,6 @@ async function signInWithGoogle() {
 // ==========================================
 // 3. AUTHENTICATION HANDLERS
 // ==========================================
-// Switch Auth Tabs
 function switchAuthTab(mode) {
     currentAuthMode = mode;
     document.getElementById('tab-login').classList.toggle('active', mode === 'login');
@@ -75,7 +75,6 @@ function switchAuthTab(mode) {
     document.getElementById('btn-auth-submit').innerText = mode === 'login' ? 'Sign In' : 'Create Account';
 }
 
-// Password Requirement Check
 function validatePasswordRules() {
     if (currentAuthMode !== 'register') return;
     const val = document.getElementById('auth-password').value;
@@ -94,7 +93,6 @@ function updateRuleState(id, isValid, labelText) {
     }
 }
 
-// Register or Login via Firebase
 document.getElementById('auth-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('auth-username').value.trim();
@@ -151,7 +149,6 @@ async function addStudentCPR() {
     }
 
     try {
-        // Check if CPR exists in Firestore
         const snapshot = await db.collection('students').where('cpr', '==', cpr).get();
         if (!snapshot.empty) {
             const existingDoc = snapshot.docs[0].data();
@@ -159,10 +156,8 @@ async function addStudentCPR() {
             return;
         }
 
-        // Use uid or email consistently
         const userIdentifier = currentUserData.email || currentUserData.displayName || currentUserData.uid;
 
-        // Add new student
         await db.collection('students').add({
             cpr: cpr,
             name: "New Student",
@@ -190,21 +185,15 @@ function resetAndAddAnotherCPR() {
 function listenToStudentDirectory() {
     if (!currentUserData) return;
 
-    // Get current user's email or username
     const activeEmail = currentUserData.email;
     const activeName = currentUserData.displayName;
 
-    // Fetch students without database restrictions first
     db.collection('students').onSnapshot((snapshot) => {
         studentList = [];
         snapshot.forEach(doc => {
             const data = doc.data();
-            
-            // Debug log to check what is in your database
-            console.log("Student in DB:", data.cpr, "| Added By:", data.added_by);
-
-            // Match either email or username
-            if (data.added_by === activeEmail || data.added_by === activeName) {
+            // Restrict view so users only see student data they added
+            if (data.added_by === activeEmail || data.added_by === activeName || data.added_by === currentUserData.uid) {
                 studentList.push({ id: doc.id, ...data });
             }
         });
@@ -325,7 +314,92 @@ async function deleteStudent(id) {
 }
 
 // ==========================================
-// 6. PASSWORD CHANGE
+// 6. COURSE MANAGEMENT (WITH TIMESTAMP)
+// ==========================================
+async function addCourseToStudent(studentId) {
+    const inputEl = document.getElementById(`course-input-${studentId}`);
+    const courseName = inputEl.value.trim();
+
+    if (!courseName) {
+        alert("Please enter a course name.");
+        return;
+    }
+
+    const now = new Date();
+    const formattedDateTime = now.toLocaleDateString(undefined, { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+    }) + ", " + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const newCourseObj = {
+        name: courseName,
+        addedAt: formattedDateTime
+    };
+
+    try {
+        const studentDoc = await db.collection('students').doc(studentId).get();
+        const currentData = studentDoc.data();
+        const existingCourses = currentData.courses || [];
+
+        existingCourses.push(newCourseObj);
+
+        await db.collection('students').doc(studentId).update({
+            courses: existingCourses
+        });
+
+        inputEl.value = "";
+    } catch (err) {
+        alert("Failed to add course: " + err.message);
+    }
+}
+
+async function removeCourse(studentId, courseIndex) {
+    try {
+        const studentDoc = await db.collection('students').doc(studentId).get();
+        const currentData = studentDoc.data();
+        let existingCourses = currentData.courses || [];
+
+        existingCourses.splice(courseIndex, 1);
+
+        await db.collection('students').doc(studentId).update({
+            courses: existingCourses
+        });
+    } catch (err) {
+        alert("Failed to remove course: " + err.message);
+    }
+}
+
+// ==========================================
+// 7. CV UPLOAD FUNCTION (FIREBASE STORAGE)
+// ==========================================
+async function uploadStudentCV(studentId) {
+    const fileInput = document.getElementById(`cv-file-${studentId}`);
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Please select a file to upload first.");
+        return;
+    }
+
+    try {
+        const storageRef = firebase.storage().ref(`cvs/${studentId}_${Date.now()}_${file.name}`);
+        const uploadTask = await storageRef.put(file);
+        const downloadUrl = await uploadTask.ref.getDownloadURL();
+
+        await db.collection('students').doc(studentId).update({
+            cvUrl: downloadUrl
+        });
+
+        alert("CV uploaded successfully!");
+    } catch (err) {
+        console.error("Storage upload error:", err);
+        alert("Failed to upload CV: " + err.message + "\n(Ensure Firebase Storage is enabled in your Firebase Console)");
+    }
+}
+
+// ==========================================
+// 8. PASSWORD CHANGE
 // ==========================================
 async function submitPasswordChange() {
     const newPassword = document.getElementById('new-password-input').value.trim();
@@ -341,7 +415,7 @@ async function submitPasswordChange() {
 }
 
 // ==========================================
-// 7. REAL-TIME GROUP CHAT
+// 9. REAL-TIME GROUP CHAT
 // ==========================================
 function listenToGroupChat() {
     db.collection('chat_messages').orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
@@ -372,7 +446,7 @@ async function sendChatMessage() {
 }
 
 // ==========================================
-// 8. NAVIGATION, MODALS & LIVE CLOCK
+// 10. NAVIGATION, MODALS & LIVE CLOCK
 // ==========================================
 function showView(id) {
     document.querySelectorAll('.card-view').forEach(v => v.classList.add('hidden'));
