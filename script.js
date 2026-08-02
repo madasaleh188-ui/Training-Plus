@@ -1,6 +1,5 @@
 // ==========================================
 // 1. FIREBASE CONFIGURATION
-// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyCzTs_zw28wkHij4Jj9-EEW3XOpQ5si2yc",
   authDomain: "training-plus-212a2.firebaseapp.com",
