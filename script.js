@@ -257,8 +257,7 @@ function renderStudentDirectory(list) {
             coursesHTML = `<p style="font-size:0.82rem; color:#a0aec0; margin-top:4px;">No courses added yet.</p>`;
         }
 
-        // CV status display
-        // Replace the old cvDisplay variable with this:
+        // cvDisplay variable:
         const cvDisplay = student.cvUrl 
           ? `<a href="${student.cvUrl}" download="${student.cvName || 'Student_CV'}" target="_blank" style="color:var(--accent-slate-blue); font-weight:600; text-decoration:underline; font-size:0.85rem;">📄 View / Download CV</a>`
           : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
@@ -267,6 +266,14 @@ function renderStudentDirectory(list) {
             <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
                 <span>${student.name} (${student.cpr})</span>
                 <svg class="arrow-icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                <!-- CV UPLOAD SECTION -->
+                <div style="margin-bottom: 16px;">
+                  <h4 style="margin-bottom: 8px; color: var(--accent-slate-blue);">Student CV Document</h4>
+                  <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                  <input type="file" id="cv-input-${student.id}" accept=".pdf,.doc,.docx" style="font-size: 0.85rem;">
+                  <button type="button" class="primary-btn" onclick="uploadStudentCV('${student.id}')" style="padding: 6px 12px; font-size: 0.85rem;">Upload CV</button>
+                  <div style="margin-left: auto;">${cvDisplay}</div>
+                </div>
             </div>
             <div class="student-details hidden">
                 <div class="student-actions-wrapper">
@@ -408,7 +415,8 @@ async function removeCourse(studentId, courseIndex) {
 // 7. CV UPLOAD FUNCTION (FIREBASE STORAGE)
 // ==========================================
 async function uploadStudentCV(studentId) {
-    const fileInput = document.getElementById(`cv-file-${studentId}`);
+    // Notice the updated ID matching: cv-input-${studentId}
+    const fileInput = document.getElementById(`cv-input-${studentId}`);
     
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
         alert("Please select a file first!");
@@ -417,14 +425,11 @@ async function uploadStudentCV(studentId) {
 
     const file = fileInput.files[0];
 
-    // Optional: Limit file size to 700KB to stay well within Firestore's 1MB limit per document
+    // Limit size to ~700KB to fit easily into Firestore documents
     if (file.size > 700 * 1024) {
-        alert("File size is too large! Please upload a PDF or document under 700KB.");
+        alert("File size is too large! Please select a file under 700KB.");
         return;
     }
-
-    const uploadBtn = document.querySelector(`button[onclick="uploadStudentCV('${studentId}')"]`);
-    if (uploadBtn) uploadBtn.innerText = "Uploading...";
 
     const reader = new FileReader();
 
@@ -432,7 +437,7 @@ async function uploadStudentCV(studentId) {
         const base64String = e.target.result;
 
         try {
-            // Save file data string directly into Firestore
+            // Save file as Base64 in Firestore document
             await db.collection('students').doc(studentId).update({
                 cvUrl: base64String,
                 cvName: file.name
@@ -442,18 +447,15 @@ async function uploadStudentCV(studentId) {
         } catch (err) {
             console.error("Firestore CV update error:", err);
             alert("Failed to save CV: " + err.message);
-        } finally {
-            if (uploadBtn) uploadBtn.innerText = "Upload CV";
         }
     };
 
     reader.onerror = function (error) {
         console.error("File reading error:", error);
         alert("Could not read file!");
-        if (uploadBtn) uploadBtn.innerText = "Upload CV";
     };
 
-    // Read file content
+    // Read file
     reader.readAsDataURL(file);
 }
 // ==========================================
