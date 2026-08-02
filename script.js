@@ -67,33 +67,125 @@ async function signInWithGoogle() {
 // ==========================================
 // 3. AUTHENTICATION HANDLERS
 // ==========================================
-// SIGN IN HANDLER
-document.getElementById('login-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
+let currentAuthMode = 'login';
 
-    try {
-        await auth.signInWithEmailAndPassword(email, password);
-        alert("Logged in successfully!");
-    } catch (err) {
-        alert("Sign In Failed: " + err.message);
+function switchAuthTab(mode) {
+    currentAuthMode = mode;
+    
+    // Toggle active tabs
+    document.getElementById('tab-login')?.classList.toggle('active', mode === 'login');
+    document.getElementById('tab-register')?.classList.toggle('active', mode === 'register');
+    
+    // Hide/Show password rules
+    document.getElementById('password-rules')?.classList.toggle('hidden', mode === 'login');
+    
+    // Hide Username field in Login mode, show in Register mode
+    const usernameInput = document.getElementById('auth-username');
+    if (usernameInput) {
+        const usernameContainer = usernameInput.closest('label') || usernameInput.parentElement;
+        if (usernameContainer) {
+            usernameContainer.style.display = mode === 'login' ? 'none' : 'block';
+        }
+        usernameInput.required = (mode === 'register');
+    }
+
+    // Change button text
+    const submitBtn = document.getElementById('btn-auth-submit');
+    if (submitBtn) {
+        submitBtn.innerText = mode === 'login' ? 'Sign In' : 'Create Account';
+    }
+}
+
+function validatePasswordRules() {
+    if (currentAuthMode !== 'register') return;
+    const val = document.getElementById('auth-password').value;
+
+    updateRuleState('rule-length', val.length >= 8, "Minimum 8 characters");
+    updateRuleState('rule-upper', /[A-Z]/.test(val), "At least one uppercase letter (A-Z)");
+    updateRuleState('rule-lower', /[a-z]/.test(val), "At least one lowercase letter (a-z)");
+    updateRuleState('rule-number', /\d/.test(val), "At least one number (0-9)");
+}
+
+function updateRuleState(id, isValid, labelText) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.innerText = (isValid ? "✓ " : "✖ ") + labelText;
+        el.classList.toggle('valid', isValid);
+    }
+}
+
+// FORM SUBMISSION HANDLER
+document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value.trim();
+    const usernameInput = document.getElementById('auth-username');
+    const username = usernameInput ? usernameInput.value.trim() : "";
+
+    if (currentAuthMode === 'register') {
+        // Enforce strong password rules
+        const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!regex.test(password)) {
+            alert("Password must be at least 8 characters with uppercase, lowercase, and a number.");
+            return;
+        }
+
+        try {
+            const userCred = await auth.createUserWithEmailAndPassword(email, password);
+            if (username && userCred.user) {
+                await userCred.user.updateProfile({ displayName: username });
+            }
+            alert("Account created successfully!");
+        } catch (err) {
+            console.error("Registration Error:", err);
+            if (err.code === 'auth/operation-not-allowed') {
+                alert("Email/Password Sign-In is not enabled in Firebase Console! Please turn it on under Authentication -> Sign-in method.");
+            } else if (err.code === 'auth/email-already-in-use') {
+                alert("This email address is already registered. Try signing in.");
+            } else {
+                alert("Registration failed: " + err.message);
+            }
+        }
+    } else {
+        // LOGIN MODE
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            alert("Signed in successfully!");
+        } catch (err) {
+            console.error("Login Error:", err);
+            if (err.code === 'auth/operation-not-allowed') {
+                alert("Email/Password Sign-In is not enabled in Firebase Console! Please turn it on under Authentication -> Sign-in method.");
+            } else if (err.code === 'auth/user-not-found') {
+                alert("No account found with this email.");
+            } else if (err.code === 'auth/wrong-password') {
+                alert("Incorrect password.");
+            } else {
+                alert("Login failed: " + err.message);
+            }
+        }
     }
 });
 
-// CREATE ACCOUNT HANDLER
-document.getElementById('signup-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('signup-email').value;
-    const password = document.getElementById('signup-password').value;
+function updateUserUI(isLoggedIn) {
+    document.getElementById('search-box')?.classList.toggle('hidden', !isLoggedIn);
+    document.getElementById('account-btn')?.classList.toggle('hidden', !isLoggedIn);
+    document.getElementById('logout-btn')?.classList.toggle('hidden', !isLoggedIn);
 
-    try {
-        await auth.createUserWithEmailAndPassword(email, password);
-        alert("Account created successfully!");
-    } catch (err) {
-        alert("Sign Up Failed: " + err.message);
+    if (isLoggedIn && currentUserData) {
+        const idEl = document.getElementById('modal-userid');
+        const nameEl = document.getElementById('modal-username');
+        const emailEl = document.getElementById('modal-email');
+
+        if (idEl) idEl.innerText = currentUserData.uid || '';
+        if (nameEl) nameEl.innerText = currentUserData.displayName || "User";
+        if (emailEl) emailEl.innerText = currentUserData.email || '';
     }
-});
+}
+
+function logoutUser() {
+    auth.signOut();
+}
 
 // ==========================================
 // 4. CPR RECORD MANAGEMENT
