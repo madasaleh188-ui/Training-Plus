@@ -45,6 +45,23 @@ body {
 .auth-card h2 { margin-bottom: 10px; font-size: 22px; }
 .auth-card p { color: #666; margin-bottom: 24px; font-size: 14px; }
 
+.btn-google {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.2s;
+}
+
+.btn-google:hover { background-color: #357ae8; }
+
 /* Navbar */
 .navbar {
   display: flex;
