@@ -226,14 +226,19 @@ function renderStudentDirectory(list) {
         const item = document.createElement('div');
         item.className = "student-item";
 
-        // Render enrolled courses with Timestamp
+        // Build list of courses with timestamp AND delete trash icon
         let coursesHTML = "";
         if (student.courses && Array.isArray(student.courses) && student.courses.length > 0) {
             coursesHTML = student.courses.map((c, index) => `
-                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                  <input type="text" id="course-input-${student.id}" placeholder="Enter course name (e.g. Web Development)" style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem;">
-                  <button type="button" class="primary-btn" onclick="addCourseToStudent('${student.id}')" style="padding: 6px 14px; font-size: 0.85rem;">+ Add Course</button>
-                </div>
+                <li style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:8px 12px; border: 1px solid #e2e8f0; border-radius:6px; margin-bottom:6px; font-size:0.88rem;">
+                    <div>
+                        <strong style="color: #2d3748;">${c.name}</strong> 
+                        <span style="color:#718096; margin-left:8px; font-size:0.80rem;">(${c.addedAt})</span>
+                    </div>
+                    <button type="button" onclick="removeCourse('${student.id}', ${index})" title="Delete Course" style="background:none; border:none; color:#e53e3e; cursor:pointer; font-size:1.1rem; padding: 2px 6px; border-radius: 4px;">
+                        🗑️
+                    </button>
+                </li>
             `).join("");
         } else {
             coursesHTML = `<p style="font-size:0.82rem; color:#a0aec0; margin-top:4px;">No courses added yet.</p>`;
@@ -286,14 +291,16 @@ function renderStudentDirectory(list) {
 
                 <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border-color);">
 
-                <!-- COURSES WITH DATE & TIME SECTION -->
+                <!-- ENROLLED COURSES SECTION -->
                 <div>
                     <h4 style="margin-bottom: 8px; color: var(--accent-slate-blue);">Enrolled Courses</h4>
-                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                         <input type="text" id="course-input-${student.id}" placeholder="Enter course name (e.g. Web Development)" style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem;">
                         <button type="button" class="primary-btn" onclick="addCourseToStudent('${student.id}')" style="padding: 6px 14px; font-size: 0.85rem;">+ Add Course</button>
                     </div>
-                    <ul style="list-style: none; padding: 0;">
+                    
+                    <!-- COURSES LIST OUTPUT -->
+                    <ul style="list-style: none; padding: 0; margin: 0;">
                         ${coursesHTML}
                     </ul>
                 </div>
@@ -477,6 +484,29 @@ function runLiveFooterClock() {
             const now = new Date();
             el.innerText = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + " | " + now.toLocaleTimeString();
         }, 1000);
+    }
+}
+
+async function removeCourse(studentId, courseIndex) {
+    if (!confirm("Are you sure you want to delete this course?")) return;
+
+    try {
+        const studentRef = db.collection('students').doc(studentId);
+        const docSnap = await studentRef.get();
+
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            let existingCourses = Array.isArray(data.courses) ? data.courses : [];
+
+            existingCourses.splice(courseIndex, 1);
+
+            await studentRef.update({
+                courses: existingCourses
+            });
+        }
+    } catch (err) {
+        console.error("Error removing course:", err);
+        alert("Failed to delete course: " + err.message);
     }
 }
 
