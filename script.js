@@ -1,13 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { 
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { 
-  getFirestore, collection, addDoc, doc, setDoc, getDocs, query, where, 
-  onSnapshot, deleteDoc, orderBy, serverTimestamp, or, and 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// ==========================================
+// 1. FIREBASE CONFIGURATION
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyCzTs_zw28wkHij4Jj9-EEW3XOpQ5si2yc",
   authDomain: "training-plus-212a2.firebaseapp.com",
@@ -18,376 +11,317 @@ const firebaseConfig = {
   measurementId: "G-FX3XRSLD8W"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
+// Initialize Firebase (Compat SDK)
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-let currentUser = null;
-let activeChatUserId = null;
-let currentLang = 'en';
-let studentsData = [];
-let chatUnsubscribe = null;
+let currentUserData = null;
+let currentAuthMode = "login";
+let studentList = [];
 
-// Localization Dictionary
-const translations = {
-  en: {
-    welcome: "Welcome to Training Plus",
-    loginPrompt: "Please sign in with Google to access your dashboard.",
-    signInGoogle: "Sign in with Google",
-    home: "Home",
-    downloadAll: "Export All (Excel)",
-    signOut: "Sign Out",
-    addStudentHeader: "Add New Student",
-    addStudentBtn: "Add Student",
-    myStudentsHeader: "My Students",
-    thName: "Name",
-    thEmail: "Email",
-    thCourse: "Course",
-    thActions: "Actions",
-    chatHeader: "Private Direct Messages",
-    selectUserTitle: "Select Team Member",
-    selectUserHint: "Select a user from the list to open a private chat",
-    addToList: "Add to My List",
-    addedSuccess: "Student added successfully!",
-    downloadSuccess: "Excel downloaded successfully!",
-    studentImported: "Shared student added to your private list!",
-    deletedSuccess: "Student deleted successfully!"
-  },
-  ar: {
-    welcome: "مرحباً بك في ترينينج بلس",
-    loginPrompt: "يرجى تسجيل الدخول باستخدام جوجل للوصول إلى حسابك.",
-    signInGoogle: "تسجيل الدخول بواسطة جوجل",
-    home: "الرئيسية",
-    downloadAll: "تصدير الكل (إكسيل)",
-    signOut: "تسجيل الخروج",
-    addStudentHeader: "إضافة طالب جديد",
-    addStudentBtn: "إضافة طالب",
-    myStudentsHeader: "قائمة طلابي الخصوصية",
-    thName: "الاسم",
-    thEmail: "البريد الإلكتروني",
-    thCourse: "الدورة / المسار",
-    thActions: "الإجراءات",
-    chatHeader: "المحادثات الخاصة Direct Messages",
-    selectUserTitle: "اختر عضواً للمحادثة",
-    selectUserHint: "اختر مستخدماً من القائمة لبدء محادثة خاصة معه",
-    addToList: "إضافة إلى قائمتي",
-    addedSuccess: "تمت إضافة الطالب بنجاح!",
-    downloadSuccess: "تم تحميل ملف الإكسيل بنجاح!",
-    studentImported: "تمت إضافة الطالب المشارك إلى قائمتك الخاصة!",
-    deletedSuccess: "تم حذف الطالب بنجاح!"
-  }
-};
-
-// Listen to Auth State Changes
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    currentUser = user;
-    
-    // Save/Update user profile in Firestore
-    await setDoc(doc(db, "users", user.uid), {
-      uid: user.uid,
-      name: user.displayName,
-      email: user.email,
-      photoURL: user.photoURL
-    }, { merge: true });
-
-    document.getElementById('auth-overlay').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    initApp();
-  } else {
-    currentUser = null;
-    document.getElementById('app').classList.add('hidden');
-    document.getElementById('auth-overlay').classList.remove('hidden');
-  }
+// Monitor Firebase Auth State (Auto-Remembers Logged In Users)
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        currentUserData = user;
+        updateUserUI(true);
+        showView('view-home');
+        listenToStudentDirectory();
+        listenToGroupChat();
+    } else {
+        currentUserData = null;
+        updateUserUI(false);
+        showView('view-auth');
+    }
 });
 
-// Setup Initial App Listeners
-function initApp() {
-  listenToMyStudents();
-  loadUsers();
-  setupEventListeners();
-  setupDragAndDrop();
-}
-
-function setupEventListeners() {
-  // Google Sign-In Button
-  document.getElementById('btn-google-login').onclick = () => {
-    signInWithPopup(auth, googleProvider).catch(err => showToast(err.message, true));
-  };
-
-  // Sign Out Button
-  document.getElementById('btn-signout').onclick = () => {
-    if (chatUnsubscribe) chatUnsubscribe();
-    signOut(auth);
-  };
-
-  // Language Toggle Switcher (AR / EN)
-  document.getElementById('btn-lang-toggle').onclick = () => {
-    currentLang = currentLang === 'en' ? 'ar' : 'en';
-    document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = currentLang;
-    applyLanguage();
-  };
-
-  // Add Student Form Submission
-  document.getElementById('student-form').onsubmit = async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('student-name').value;
-    const email = document.getElementById('student-email').value;
-    const course = document.getElementById('student-course').value;
+// ==========================================
+// 2. GOOGLE SIGN-IN FUNCTION
+// ==========================================
+async function signInWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
 
     try {
-      await addDoc(collection(db, "students"), {
-        userId: currentUser.uid,
-        name,
-        email,
-        course,
-        createdAt: serverTimestamp()
-      });
-      showToast(translations[currentLang].addedSuccess);
-      document.getElementById('student-form').reset();
+        const result = await auth.signInWithPopup(provider);
+        const user = result.user;
+
+        // Save or update user profile details in Firestore
+        await db.collection("users").doc(user.uid).set({
+            username: user.displayName || user.email.split('@')[0],
+            email: user.email,
+            photoURL: user.photoURL || "",
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        console.log("Google Sign-In Successful:", user);
+    } catch (error) {
+        if (error.code !== 'auth/popup-closed-by-user') {
+            console.error("Google Sign-In Error:", error);
+            alert("Google Sign-In failed: " + error.message);
+        }
+    }
+}
+
+// ==========================================
+// 3. AUTHENTICATION HANDLERS
+// ==========================================
+// Switch Auth Tabs
+function switchAuthTab(mode) {
+    currentAuthMode = mode;
+    document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+    document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+    document.getElementById('password-rules').classList.toggle('hidden', mode === 'login');
+    document.getElementById('btn-auth-submit').innerText = mode === 'login' ? 'Sign In' : 'Create Account';
+}
+
+// Password Requirement Check
+function validatePasswordRules() {
+    if (currentAuthMode !== 'register') return;
+    const val = document.getElementById('auth-password').value;
+
+    updateRuleState('rule-length', val.length >= 8, "Minimum 8 characters");
+    updateRuleState('rule-upper', /[A-Z]/.test(val), "At least one uppercase letter (A-Z)");
+    updateRuleState('rule-lower', /[a-z]/.test(val), "At least one lowercase letter (a-z)");
+    updateRuleState('rule-number', /\d/.test(val), "At least one number (0-9)");
+}
+
+function updateRuleState(id, isValid, labelText) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.innerText = (isValid ? "✓ " : "✖ ") + labelText;
+        el.classList.toggle('valid', isValid);
+    }
+}
+
+// Register or Login via Firebase
+document.getElementById('auth-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('auth-username').value.trim();
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value.trim();
+
+    if (currentAuthMode === 'register') {
+        const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!regex.test(password)) {
+            alert("Password must be at least 8 characters with uppercase, lowercase, and a number.");
+            return;
+        }
+
+        try {
+            const userCred = await auth.createUserWithEmailAndPassword(email, password);
+            await userCred.user.updateProfile({ displayName: username });
+            alert("Account created successfully!");
+        } catch (err) {
+            alert(err.message);
+        }
+    } else {
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+        } catch (err) {
+            alert("Login failed: " + err.message);
+        }
+    }
+});
+
+function updateUserUI(isLoggedIn) {
+    document.getElementById('search-box').classList.toggle('hidden', !isLoggedIn);
+    document.getElementById('account-btn').classList.toggle('hidden', !isLoggedIn);
+    document.getElementById('logout-btn').classList.toggle('hidden', !isLoggedIn);
+
+    if (isLoggedIn && currentUserData) {
+        document.getElementById('modal-userid').innerText = currentUserData.uid;
+        document.getElementById('modal-username').innerText = currentUserData.displayName || "User";
+        document.getElementById('modal-email').innerText = currentUserData.email;
+    }
+}
+
+function logoutUser() {
+    auth.signOut();
+}
+
+// ==========================================
+// 4. CPR RECORD MANAGEMENT
+// ==========================================
+async function addStudentCPR() {
+    const cpr = document.getElementById('cpr-input').value.trim();
+    if (cpr.length !== 9 || isNaN(cpr)) {
+        alert("CPR must be exactly 9 numbers.");
+        return;
+    }
+
+    try {
+        // Check if CPR exists in Firestore
+        const snapshot = await db.collection('students').where('cpr', '==', cpr).get();
+        if (!snapshot.empty) {
+            const existingDoc = snapshot.docs[0].data();
+            alert(`This CPR is already in the system and was added by user: ${existingDoc.added_by || 'Unknown'}`);
+            return;
+        }
+
+        // Add new student
+        await db.collection('students').add({
+            cpr: cpr,
+            name: "New Student",
+            gender: "male",
+            email: "",
+            added_by: currentUserData.displayName || currentUserData.email,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        document.getElementById('cpr-form').reset();
+        showView('view-cpr-success');
     } catch (err) {
-      showToast(err.message, true);
+        alert("Error adding CPR: " + err.message);
     }
-  };
-
-  // Export All Students to Excel Button
-  document.getElementById('btn-download-all').onclick = () => {
-    if (studentsData.length === 0) return;
-    exportToExcel(studentsData, 'My_Students_Data.xlsx');
-  };
-
-  // Send Chat Message Button
-  document.getElementById('btn-send-msg').onclick = sendMessage;
-  document.getElementById('chat-input').onkeypress = (e) => {
-    if (e.key === 'Enter') sendMessage();
-  };
 }
 
-function applyLanguage() {
-  document.querySelectorAll('[data-i18n]').forEach(elem => {
-    const key = elem.getAttribute('data-i18n');
-    if (translations[currentLang][key]) {
-      elem.innerText = translations[currentLang][key];
-    }
-  });
+function resetAndAddAnotherCPR() {
+    document.getElementById('cpr-form').reset();
+    showView('view-add-cpr');
 }
 
-// --- PRIVATE STUDENTS REALTIME SYNC ---
-function listenToMyStudents() {
-  const q = query(
-    collection(db, "students"), 
-    where("userId", "==", currentUser.uid)
-  );
-
-  onSnapshot(q, (snapshot) => {
-    studentsData = [];
-    const tbody = document.getElementById('students-list');
-    tbody.innerHTML = '';
-
-    snapshot.forEach((docSnap) => {
-      const student = { id: docSnap.id, ...docSnap.data() };
-      studentsData.push(student);
-
-      const tr = document.createElement('tr');
-      tr.setAttribute('draggable', 'true');
-      tr.ondragstart = (e) => e.dataTransfer.setData("text/plain", JSON.stringify(student));
-
-      tr.innerHTML = `
-        <td>${escapeHtml(student.name)}</td>
-        <td>${escapeHtml(student.email)}</td>
-        <td>${escapeHtml(student.course)}</td>
-        <td class="action-cells">
-          <button class="icon-btn download-btn" data-id="${student.id}" title="Download Excel">
-            <i class="fa-solid fa-file-excel"></i>
-          </button>
-          <button class="icon-btn delete-btn" data-id="${student.id}" title="Delete">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
-      `;
-
-      tr.querySelector('.download-btn').onclick = () => exportSingleStudent(student.id);
-      tr.querySelector('.delete-btn').onclick = () => deleteStudent(student.id);
-
-      tbody.appendChild(tr);
+// ==========================================
+// 5. STUDENT DIRECTORY & SEARCH
+// ==========================================
+function listenToStudentDirectory() {
+    db.collection('students').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+        studentList = [];
+        snapshot.forEach(doc => {
+            studentList.push({ id: doc.id, ...doc.data() });
+        });
+        renderStudentDirectory(studentList);
     });
-  });
+}
+
+function handleSearch() {
+    const q = document.getElementById('search-input').value.toLowerCase().trim();
+    const filtered = studentList.filter(s => 
+        (s.name && s.name.toLowerCase().includes(q)) || 
+        (s.cpr && s.cpr.includes(q))
+    );
+    renderStudentDirectory(filtered);
+}
+
+function renderStudentDirectory(list) {
+    const container = document.getElementById('student-container');
+    container.innerHTML = "";
+
+    if (list.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#a0aec0; padding:20px;">No student records found.</p>`;
+        return;
+    }
+
+    list.forEach((student) => {
+        const item = document.createElement('div');
+        item.className = "student-item";
+        item.innerHTML = `
+            <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                <span>${student.name} (${student.cpr})</span>
+                <svg class="arrow-icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="student-details hidden">
+                <div class="student-actions-wrapper">
+                    <button class="delete-icon-btn" onclick="deleteStudent('${student.id}')">Delete</button>
+                </div>
+                <div class="grid-form">
+                    <label>Full Name: <input type="text" value="${student.name || ''}" onchange="updateStudentField('${student.id}', 'name', this.value)"></label>
+                    <label>CPR: <input type="text" value="${student.cpr}" readonly></label>
+                    <label>Added By: <input type="text" value="${student.added_by || ''}" readonly></label>
+                    <label>Gender: 
+                        <select onchange="updateStudentField('${student.id}', 'gender', this.value)">
+                            <option value="male" ${student.gender === 'male' ? 'selected' : ''}>Male</option>
+                            <option value="female" ${student.gender === 'female' ? 'selected' : ''}>Female</option>
+                        </select>
+                    </label>
+                    <label>Email: <input type="email" value="${student.email || ''}" onchange="updateStudentField('${student.id}', 'email', this.value)"></label>
+                </div>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+async function updateStudentField(id, field, value) {
+    await db.collection('students').doc(id).update({ [field]: value });
 }
 
 async function deleteStudent(id) {
-  try {
-    await deleteDoc(doc(db, "students", id));
-    showToast(translations[currentLang].deletedSuccess);
-  } catch (err) {
-    showToast(err.message, true);
-  }
-}
-
-function exportSingleStudent(id) {
-  const student = studentsData.find(s => s.id === id);
-  if (student) {
-    exportToExcel([student], `Student_${student.name.replace(/\s+/g, '_')}.xlsx`);
-  }
-}
-
-function exportToExcel(dataArray, filename) {
-  const exportFormat = dataArray.map(item => ({
-    "Full Name": item.name,
-    "Email Address": item.email,
-    "Course / Track": item.course
-  }));
-
-  const worksheet = XLSX.utils.json_to_sheet(exportFormat);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
-  XLSX.writeFile(workbook, filename);
-  showToast(translations[currentLang].downloadSuccess);
-}
-
-// --- 1-ON-1 REALTIME CHAT & DRAG-AND-DROP ---
-async function loadUsers() {
-  const querySnapshot = await getDocs(collection(db, "users"));
-  const ul = document.getElementById('users-ul');
-  ul.innerHTML = '';
-
-  querySnapshot.forEach((docSnap) => {
-    const user = docSnap.data();
-    if (user.uid !== currentUser.uid) {
-      const li = document.createElement('li');
-      li.id = `user-item-${user.uid}`;
-      li.innerHTML = `<i class="fa-solid fa-user"></i> ${escapeHtml(user.name)}`;
-      li.onclick = () => openPrivateChat(user);
-      ul.appendChild(li);
+    if (confirm("Delete this student entry?")) {
+        await db.collection('students').doc(id).delete();
     }
-  });
 }
 
-function openPrivateChat(user) {
-  activeChatUserId = user.uid;
-
-  document.querySelectorAll('.users-list li').forEach(el => el.classList.remove('active'));
-  document.getElementById(`user-item-${user.uid}`).classList.add('active');
-
-  document.getElementById('chat-header-title').innerText = `${user.name}`;
-  document.getElementById('chat-input').disabled = false;
-  document.getElementById('btn-send-msg').disabled = false;
-
-  listenToMessages();
-}
-
-function listenToMessages() {
-  if (chatUnsubscribe) chatUnsubscribe();
-
-  const q = query(
-    collection(db, "messages"),
-    or(
-      and(where("senderId", "==", currentUser.uid), where("receiverId", "==", activeChatUserId)),
-      and(where("senderId", "==", activeChatUserId), where("receiverId", "==", currentUser.uid))
-    ),
-    orderBy("createdAt", "asc")
-  );
-
-  chatUnsubscribe = onSnapshot(q, (snapshot) => {
-    const chatBox = document.getElementById('chat-messages');
-    chatBox.innerHTML = '';
-
-    snapshot.forEach((docSnap) => {
-      const msg = docSnap.data();
-      const bubble = document.createElement('div');
-      const isMine = msg.senderId === currentUser.uid;
-      bubble.className = `chat-bubble ${isMine ? 'mine' : 'other'}`;
-
-      if (msg.studentPayload) {
-        const student = JSON.parse(msg.studentPayload);
-        bubble.innerHTML = `
-          <div class="shared-card">
-            <h4><i class="fa-solid fa-id-card"></i> ${escapeHtml(student.name)}</h4>
-            <p>${escapeHtml(student.email)} | ${escapeHtml(student.course)}</p>
-            ${!isMine ? `<button class="btn-small btn-import">${translations[currentLang].addToList}</button>` : ''}
-          </div>
-        `;
-
-        if (!isMine) {
-          bubble.querySelector('.btn-import').onclick = () => importSharedStudent(msg.studentPayload);
+// ==========================================
+// 6. PASSWORD CHANGE
+// ==========================================
+async function submitPasswordChange() {
+    const newPassword = document.getElementById('new-password-input').value.trim();
+    if (currentUserData) {
+        try {
+            await currentUserData.updatePassword(newPassword);
+            alert("Password updated successfully!");
+            closeAccountModal();
+        } catch (err) {
+            alert("Failed to update password: " + err.message + " (You may need to re-login first).");
         }
-      } else {
-        bubble.innerText = msg.message;
-      }
-      chatBox.appendChild(bubble);
+    }
+}
+
+// ==========================================
+// 7. REAL-TIME GROUP CHAT
+// ==========================================
+function listenToGroupChat() {
+    db.collection('chat_messages').orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
+        const box = document.getElementById('chat-messages');
+        box.innerHTML = "";
+        snapshot.forEach(doc => {
+            const m = doc.data();
+            const div = document.createElement('div');
+            div.className = "chat-msg";
+            div.innerHTML = `<strong>${m.username}:</strong> ${m.message}`;
+            box.appendChild(div);
+        });
+        box.scrollTop = box.scrollHeight;
     });
-
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
 }
 
-async function sendMessage() {
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
-  if (!text || !activeChatUserId) return;
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    if (!message || !currentUserData) return;
 
-  try {
-    await addDoc(collection(db, "messages"), {
-      senderId: currentUser.uid,
-      receiverId: activeChatUserId,
-      message: text,
-      studentPayload: null,
-      createdAt: serverTimestamp()
+    await db.collection('chat_messages').add({
+        username: currentUserData.displayName || currentUserData.email,
+        message: message,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
-    input.value = '';
-  } catch (err) {
-    showToast(err.message, true);
-  }
+    input.value = "";
 }
 
-function setupDragAndDrop() {
-  const chatWindow = document.getElementById('chat-window');
-  chatWindow.ondragover = (e) => e.preventDefault();
-  
-  chatWindow.ondrop = async (e) => {
-    e.preventDefault();
-    if (!activeChatUserId) return;
-
-    const rawData = e.dataTransfer.getData("text/plain");
-    if (!rawData) return;
-
-    await addDoc(collection(db, "messages"), {
-      senderId: currentUser.uid,
-      receiverId: activeChatUserId,
-      message: "Shared a student card",
-      studentPayload: rawData,
-      createdAt: serverTimestamp()
-    });
-  };
+// ==========================================
+// 8. NAVIGATION, MODALS & LIVE CLOCK
+// ==========================================
+function showView(id) {
+    document.querySelectorAll('.card-view').forEach(v => v.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
 }
 
-async function importSharedStudent(payloadStr) {
-  const student = JSON.parse(payloadStr);
-  try {
-    await addDoc(collection(db, "students"), {
-      userId: currentUser.uid,
-      name: student.name,
-      email: student.email,
-      course: student.course,
-      createdAt: serverTimestamp()
-    });
-    showToast(translations[currentLang].studentImported);
-  } catch (err) {
-    showToast(err.message, true);
-  }
+function openAccountModal() { document.getElementById('account-modal').classList.remove('hidden'); }
+function closeAccountModal() { document.getElementById('account-modal').classList.add('hidden'); }
+function toggleChatWindow() { document.getElementById('chat-window').classList.toggle('hidden'); }
+
+function runLiveFooterClock() {
+    const el = document.getElementById('live-footer-datetime');
+    if (el) {
+        setInterval(() => {
+            const now = new Date();
+            el.innerText = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + " | " + now.toLocaleTimeString();
+        }, 1000);
+    }
 }
 
-function showToast(msg, isError = false) {
-  const toast = document.getElementById('toast');
-  toast.innerText = msg;
-  toast.className = `toast ${isError ? 'error' : 'success'}`;
-  toast.classList.remove('hidden');
-  setTimeout(() => toast.classList.add('hidden'), 3000);
-}
-
-function escapeHtml(text) {
-  return String(text).replace(/[&<>"']/g, function (m) {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
-  });
-}
+window.addEventListener('DOMContentLoaded', () => {
+    runLiveFooterClock();
+});
