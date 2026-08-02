@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
@@ -12,9 +11,6 @@
   
   <!-- SheetJS Library for Excel Exports -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  
-  <!-- Google Identity Services -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -25,12 +21,9 @@
       <h2 data-i18n="welcome">Welcome to Training Plus</h2>
       <p data-i18n="loginPrompt">Please sign in with Google to access your dashboard.</p>
       
-      <div id="g_id_onload"
-           data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
-           data-callback="handleCredentialResponse"
-           data-auto_prompt="false">
-      </div>
-      <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline"></div>
+      <button id="btn-google-login" class="btn-google">
+        <i class="fa-brands fa-google"></i> <span data-i18n="signInGoogle">Sign in with Google</span>
+      </button>
     </div>
   </div>
 
@@ -40,7 +33,7 @@
     <!-- Top Navigation Header -->
     <header class="navbar">
       <div class="nav-left">
-        <button id="btn-home" class="nav-btn" onclick="loadStudents()">
+        <button id="btn-home" class="nav-btn">
           <i class="fa-solid fa-house"></i> <span data-i18n="home">Home</span>
         </button>
         <!-- Download All Students Data in Excel Style -->
@@ -52,7 +45,7 @@
       <div class="nav-right">
         <!-- AR / EN Language Toggle Button -->
         <button id="btn-lang-toggle" class="lang-btn"><i class="fa-solid fa-globe"></i> AR / EN</button>
-        <button id="btn-signout" class="nav-btn danger-btn" onclick="signOut()">
+        <button id="btn-signout" class="nav-btn danger-btn">
           <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="signOut">Sign Out</span>
         </button>
       </div>
@@ -101,7 +94,7 @@
           </div>
 
           <!-- Private Chat Window & Drop Area -->
-          <div class="chat-window" id="chat-window" ondragover="allowDrop(event)" ondrop="dropStudent(event)">
+          <div class="chat-window" id="chat-window">
             <div class="chat-header" id="chat-header-title" data-i18n="selectUserHint">
               Select a user from the list to open a private chat
             </div>
@@ -125,6 +118,7 @@
     <div id="toast" class="toast hidden"></div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- Firebase & Main Application Logic -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>
