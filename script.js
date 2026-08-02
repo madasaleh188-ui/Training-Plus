@@ -249,9 +249,19 @@ function renderStudentDirectory(list) {
         }
 
         // 2. Build CV status link
-        const cvDisplay = student.cvUrl 
-            ? `<a href="${student.cvUrl}" download="${student.cvName || 'Student_CV'}" target="_blank" style="color:var(--accent-slate-blue); font-weight:600; text-decoration:underline; font-size:0.85rem;">📄 View / Download CV</a>`
-            : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
+        // Build CV status link with a Delete CV button beside it
+const cvDisplay = student.cvUrl 
+    ? `<div style="display: flex; align-items: center; gap: 8px;">
+        <a href="${student.cvUrl}" download="${student.cvName || 'Student_CV'}" target="_blank" style="color:var(--accent-slate-blue); font-weight:600; text-decoration:underline; font-size:0.85rem;">📄 View / Download CV</a>
+        <button type="button" onclick="deleteStudentCV('${student.id}')" 
+            style="background: #fff5f5; border: 1px solid #feb2b2; color: #e53e3e; cursor: pointer; font-size: 0.75rem; padding: 4px 10px; border-radius: 100px; transition: all 0.2s;" 
+            onmouseover="this.style.background='#fee2e2'" 
+            onmouseout="this.style.background='#fff5f5'"
+        >
+            Delete CV
+        </button>
+       </div>`
+    : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
 
         // 3. Render complete student card HTML
         item.innerHTML = `
@@ -530,6 +540,25 @@ async function removeCourse(studentId, courseIndex) {
     } catch (err) {
         console.error("Error removing course:", err);
         alert("Failed to delete course: " + err.message);
+    }
+}
+
+async function deleteStudentCV(studentId) {
+    if (!confirm("Are you sure you want to delete this CV?")) return;
+
+    try {
+        const studentRef = db.collection('students').doc(studentId);
+
+        // Remove cvUrl and cvName fields from Firestore
+        await studentRef.update({
+            cvUrl: firebase.firestore.FieldValue.delete(),
+            cvName: firebase.firestore.FieldValue.delete()
+        });
+
+        alert("CV deleted successfully!");
+    } catch (err) {
+        console.error("Error deleting CV:", err);
+        alert("Failed to delete CV: " + err.message);
     }
 }
 
