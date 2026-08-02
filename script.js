@@ -7,14 +7,15 @@ import {
   onSnapshot, deleteDoc, orderBy, serverTimestamp, or, and 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// REPLACE THIS WITH YOUR FIREBASE CONFIG FROM FIREBASE CONSOLE
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCzTs_zw28wkHij4Jj9-EEW3XOpQ5si2yc",
+  authDomain: "training-plus-212a2.firebaseapp.com",
+  projectId: "training-plus-212a2",
+  storageBucket: "training-plus-212a2.firebasestorage.app",
+  messagingSenderId: "330136803727",
+  appId: "1:330136803727:web:3013a358a547a112ff93fa",
+  measurementId: "G-FX3XRSLD8W"
 };
 
 const app = initializeApp(firebaseConfig);
