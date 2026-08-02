@@ -4,18 +4,29 @@ header("Content-Type: application/json");
 require_once "db.php";
 $action = $_GET['action'] ?? '';
 
-// Get Students (with Search support)
+// Get Students (Only records added by the current logged-in user)
 if ($action === 'get_students') {
-    $search = trim($_GET['q'] ?? '');
-    if (!empty($search)) {
-        $stmt = $conn->prepare("SELECT * FROM students WHERE name LIKE ? OR cpr LIKE ? ORDER BY id DESC");
-        $like = "%" . $search . "%";
-        $stmt->bind_param("ss", $like, $like);
-        $stmt->execute();
-        $result = $stmt->get_result();
-    } else {
-        $result = $conn->query("SELECT * FROM students ORDER BY id DESC");
+    if (!isset($_SESSION['username'])) {
+        echo json_encode([]);
+        exit;
     }
+
+    $currentUser = $_SESSION['username'];
+    $search = trim($_GET['q'] ?? '');
+
+    if (!empty($search)) {
+        // Filter by search query AND current user
+        $stmt = $conn->prepare("SELECT * FROM students WHERE added_by = ? AND (name LIKE ? OR cpr LIKE ?) ORDER BY id DESC");
+        $like = "%" . $search . "%";
+        $stmt->bind_param("sss", $currentUser, $like, $like);
+    } else {
+        // Filter only by current user
+        $stmt = $conn->prepare("SELECT * FROM students WHERE added_by = ? ORDER BY id DESC");
+        $stmt->bind_param("s", $currentUser);
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
 
     $students = [];
     while ($row = $result->fetch_assoc()) {
