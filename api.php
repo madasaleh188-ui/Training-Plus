@@ -1,137 +1,148 @@
 <?php
 session_start();
-header("Content-Type: application/json");
-require_once "db.php";
+header('Content-Type: application/json');
+
+require_once 'auth.php';
+
+// Database Connection
+$db_host = 'localhost';
+$db_name = 'training_plus';
+$db_user = 'root';
+$db_pass = '';
+
+try {
+    $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+    ]);
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Database connection failed']);
+    exit;
+}
+
 $action = $_GET['action'] ?? '';
 
-// Get Students (with Search support)
-if ($action === 'get_students') {
-    $search = trim($_GET['q'] ?? '');
-    if (!empty($search)) {
-        $stmt = $conn->prepare("SELECT * FROM students WHERE name LIKE ? OR cpr LIKE ? ORDER BY id DESC");
-        $like = "%" . $search . "%";
-        $stmt->bind_param("ss", $like, $like);
-        $stmt->execute();
-        $result = $stmt->get_result();
+// Check Session Status
+if ($action === 'check_session') {
+    if (isset($_SESSION['user'])) {
+        echo json_encode(['authenticated' => true, 'user' => $_SESSION['user']]);
     } else {
-        $result = $conn->query("SELECT * FROM students ORDER BY id DESC");
+        echo json_encode(['authenticated' => false]);
     }
-
-    $students = [];
-    while ($row = $result->fetch_assoc()) {
-        $students[] = $row;
-    }
-    echo json_encode($students);
     exit;
 }
 
-// Add Student
-if ($action === 'add_student') {
-    $data = json_decode(file_get_contents("php://input"), true) ?: $_POST;
-    $cpr = trim($data['cpr'] ?? '');
-    $addedBy = $_SESSION['username'] ?? 'Admin';
+// Google Authentication Endpoint
+if ($action === 'google_login') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $token = $data['token'] ?? '';
 
-    if (strlen($cpr) !== 9 || !is_numeric($cpr) || intval($cpr) <= 0) {
-        echo json_encode(["status" => "error", "message" => "CPR must be exactly 9 numbers and greater than 0!"]);
+    if (empty($token)) {
+        echo json_encode(['success' => false, 'message' => 'Token required']);
         exit;
     }
 
-    $stmt = $conn->prepare("SELECT added_by FROM students WHERE cpr = ?");
-    $stmt->bind_param("s", $cpr);
-    $stmt->execute();
-    $res = $stmt->get_result();
+    // Verify token with Google API
+    $google_url = "https://oauth2.googleapis.com/tokeninfo?id_token=" . urlencode($token);
+    $response = @file_get_contents($google_url);
+    $payload = json_decode($response, true);
 
-    if ($row = $res->fetch_assoc()) {
-        echo json_encode([
-            "status" => "duplicate",
-            "message" => "This CPR is already in the system and was added by user: " . $row['added_by']
-        ]);
-        exit;
-    }
+    if (isset($payload['sub'])) {
+        $google_id = $payload['sub'];
+        $email = $payload['email'];
+        $name = $payload['name'];
+        $picture = $payload['picture'] ?? '';
 
-    $stmt = $conn->prepare("INSERT INTO students (name, cpr, added_by) VALUES ('New Student', ?, ?)");
-    $stmt->bind_param("ss", $cpr, $addedBy);
+        // Check if user exists
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE google_id = ?");
+        $stmt->execute([$google_id]);
+        $user = $stmt->fetch();
 
-    if ($stmt->execute()) {
-        echo json_encode(["status" => "success", "message" => "Student added successfully!"]);
-    } else {
-        echo json_encode(["status" => "error", "message" => "Failed to add student record."]);
-    }
-    exit;
-}
-
-// Update Student Fields
-if ($action === 'update_student') {
-    $data = json_decode(file_get_contents("php://input"), true);
-    $id = intval($data['id']);
-    $field = $data['field'];
-    $value = $data['value'];
-
-    $allowed_fields = ['name', 'gender', 'email', 'status', 'courses', 'ministry', 'degree'];
-    if (in_array($field, $allowed_fields)) {
-        $stmt = $conn->prepare("UPDATE students SET $field = ? WHERE id = ?");
-        $stmt->bind_param("si", $value, $id);
-        $stmt->execute();
-        echo json_encode(["status" => "success"]);
-    }
-    exit;
-}
-
-// Upload Photo
-if ($action === 'upload_photo') {
-    $id = intval($_POST['id']);
-    if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        if (!is_dir('uploads')) { mkdir('uploads', 0777, true); }
-        $fileName = time() . '_' . preg_replace("/[^a-zA-Z0-9\._-]/", "", basename($_FILES['photo']['name']));
-        $targetFilePath = 'uploads/' . $fileName;
-
-        if (move_uploaded_file($_FILES['photo']['tmp_name'], $targetFilePath)) {
-            $stmt = $conn->prepare("UPDATE students SET photo = ? WHERE id = ?");
-            $stmt->bind_param("si", $targetFilePath, $id);
-            $stmt->execute();
-            echo json_encode(["status" => "success", "photo" => $targetFilePath]);
-            exit;
+        if (!$user) {
+            $stmt = $pdo->prepare("INSERT INTO users (google_id, name, email, picture) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$google_id, $name, $email, $picture]);
+            $user = ['id' => $pdo->lastInsertId(), 'google_id' => $google_id, 'name' => $name, 'email' => $email, 'picture' => $picture];
         }
+
+        $_SESSION['user'] = $user;
+        echo json_encode(['success' => true, 'user' => $user]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid Google account token']);
     }
-    echo json_encode(["status" => "error"]);
     exit;
 }
 
-// Delete Student
+// Sign Out Endpoint
+if ($action === 'logout') {
+    session_destroy();
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+// Lock all subsequent actions behind auth check
+$current_user = require_auth();
+$current_user_id = $current_user['id'];
+
+// --- STUDENT ACTIONS (STRICT PRIVACY ISOLATION) ---
+
+if ($action === 'get_students') {
+    $stmt = $pdo->prepare("SELECT * FROM students WHERE user_id = ? ORDER BY id DESC");
+    $stmt->execute([$current_user_id]);
+    echo json_encode($stmt->fetchAll());
+    exit;
+}
+
+if ($action === 'add_student') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $stmt = $pdo->prepare("INSERT INTO students (user_id, name, email, course) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$current_user_id, $data['name'], $data['email'], $data['course']]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
 if ($action === 'delete_student') {
-    $data = json_decode(file_get_contents("php://input"), true);
-    $id = intval($data['id']);
-    $stmt = $conn->prepare("DELETE FROM students WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    echo json_encode(["status" => "success"]);
+    $data = json_decode(file_get_contents('php://input'), true);
+    $stmt = $pdo->prepare("DELETE FROM students WHERE id = ? AND user_id = ?");
+    $stmt->execute([$data['id'], $current_user_id]);
+    echo json_encode(['success' => true]);
     exit;
 }
 
-// Group Chat - Get Messages
+// --- 1-ON-1 MESSAGING ACTIONS ---
+
+if ($action === 'get_users') {
+    $stmt = $pdo->query("SELECT id, name, email, picture FROM users");
+    echo json_encode($stmt->fetchAll());
+    exit;
+}
+
 if ($action === 'get_messages') {
-    $result = $conn->query("SELECT * FROM group_messages ORDER BY id ASC LIMIT 50");
-    $msgs = [];
-    while ($row = $result->fetch_assoc()) {
-        $msgs[] = $row;
-    }
-    echo json_encode($msgs);
+    $receiver_id = intval($_GET['receiver_id'] ?? 0);
+    $stmt = $pdo->prepare("
+        SELECT * FROM messages 
+        WHERE (sender_id = :me AND receiver_id = :other) 
+           OR (sender_id = :other AND receiver_id = :me) 
+        ORDER BY created_at ASC
+    ");
+    $stmt->execute(['me' => $current_user_id, 'other' => $receiver_id]);
+    echo json_encode($stmt->fetchAll());
     exit;
 }
 
-// Group Chat - Send Message
 if ($action === 'send_message') {
-    $data = json_decode(file_get_contents("php://input"), true);
-    $user = $_SESSION['username'] ?? 'Anonymous';
-    $msg = trim($data['message'] ?? '');
+    $data = json_decode(file_get_contents('php://input'), true);
+    $receiver_id = intval($data['receiver_id'] ?? 0);
+    $message = trim($data['message'] ?? '');
+    $payload = $data['student_payload'] ?? null;
 
-    if (!empty($msg)) {
-        $stmt = $conn->prepare("INSERT INTO group_messages (username, message) VALUES (?, ?)");
-        $stmt->bind_param("ss", $user, $msg);
-        $stmt->execute();
-        echo json_encode(["status" => "success"]);
+    if ($receiver_id > 0) {
+        $stmt = $pdo->prepare("INSERT INTO messages (sender_id, receiver_id, message, student_payload) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$current_user_id, $receiver_id, $message, $payload]);
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid receiver']);
     }
     exit;
 }
 ?>
-
