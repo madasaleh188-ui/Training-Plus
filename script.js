@@ -230,10 +230,10 @@ function renderStudentDirectory(list) {
         let coursesHTML = "";
         if (student.courses && Array.isArray(student.courses) && student.courses.length > 0) {
             coursesHTML = student.courses.map((c, index) => `
-                <li style="display:flex; justify-content:space-between; align-items:center; background:#f0f4f2; padding:6px 10px; border-radius:6px; margin-bottom:6px; font-size:0.85rem;">
-                    <span><strong>${c.name}</strong> <small style="color:#718096; margin-left:8px;">(${c.addedAt})</small></span>
-                    <button type="button" onclick="removeCourse('${student.id}', ${index})" style="background:none; border:none; color:#e57373; cursor:pointer; font-size:1.1rem; font-weight:bold;">&times;</button>
-                </li>
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                  <input type="text" id="course-input-${student.id}" placeholder="Enter course name (e.g. Web Development)" style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem;">
+                  <button type="button" class="primary-btn" onclick="addCourseToStudent('${student.id}')" style="padding: 6px 14px; font-size: 0.85rem;">+ Add Course</button>
+                </div>
             `).join("");
         } else {
             coursesHTML = `<p style="font-size:0.82rem; color:#a0aec0; margin-top:4px;">No courses added yet.</p>`;
@@ -318,15 +318,20 @@ async function deleteStudent(id) {
 // ==========================================
 async function addCourseToStudent(studentId) {
     const inputEl = document.getElementById(`course-input-${studentId}`);
-    const courseName = inputEl.value.trim();
+    if (!inputEl) {
+        alert("Input field not found.");
+        return;
+    }
 
+    const courseName = inputEl.value.trim();
     if (!courseName) {
         alert("Please enter a course name.");
         return;
     }
 
+    // Format Date and Time
     const now = new Date();
-    const formattedDateTime = now.toLocaleDateString(undefined, { 
+    const formattedDateTime = now.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric', 
         year: 'numeric' 
@@ -338,19 +343,27 @@ async function addCourseToStudent(studentId) {
     };
 
     try {
-        const studentDoc = await db.collection('students').doc(studentId).get();
-        const currentData = studentDoc.data();
-        const existingCourses = currentData.courses || [];
+        const studentRef = db.collection('students').doc(studentId);
+        
+        // Use arrayUnion or fetch and update safely
+        const docSnap = await studentRef.get();
+        if (!docSnap.exists) {
+            alert("Student document not found.");
+            return;
+        }
 
-        existingCourses.push(newCourseObj);
+        const data = docSnap.data();
+        let currentCourses = Array.isArray(data.courses) ? data.courses : [];
+        currentCourses.push(newCourseObj);
 
-        await db.collection('students').doc(studentId).update({
-            courses: existingCourses
+        await studentRef.update({
+            courses: currentCourses
         });
 
         inputEl.value = "";
     } catch (err) {
-        alert("Failed to add course: " + err.message);
+        console.error("Error adding course:", err);
+        alert("Error adding course: " + err.message);
     }
 }
 
