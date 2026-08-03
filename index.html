@@ -58,20 +58,23 @@
         </section>
 
         <!-- CPR Entry View -->
-        <section id="view-add-cpr" class="card-view hidden">
-            <h2>Register New CPR</h2>
-            <p class="subtitle">Enter a 9-digit CPR number to add a student.</p>
-            <form id="cpr-form" class="standard-form" onsubmit="return false;">
-                <label>
-                    <span>CPR Number (9 Digits):</span>
-                    <input type="text" id="cpr-input" maxlength="9" required placeholder="e.g. 980123456">
-                </label>
-                <div class="button-group">
-                    <button type="button" class="primary-btn" id="add-student-btn" onclick="addStudentCPR()">Submit Record</button>
-                    <button type="button" class="secondary-btn" onclick="showView('view-home')">Done / Back</button>
-                </div>
-            </form>
-        </section>
+<section id="view-add-cpr" class="card-view hidden">
+    <h2>Register New CPR</h2>
+    <p class="subtitle">Enter a 9-digit CPR number to add a student.</p>
+    
+    <!-- Call addStudentCPR() on submit and return false to prevent page refresh -->
+    <form id="cpr-form" class="standard-form" onsubmit="addStudentCPR(); return false;">
+        <label>
+            <span>CPR Number (9 Digits):</span>
+            <input type="text" id="cpr-input" maxlength="9" required placeholder="e.g. 980123456">
+        </label>
+        <div class="button-group">
+            <!--  Change type to "submit" -->
+            <button type="submit" class="primary-btn" id="add-student-btn">Submit Record</button>
+            <button type="button" class="secondary-btn" onclick="showView('view-home')">Done / Back</button>
+        </div>
+    </form>
+</section>
 
         <!-- CPR Success View -->
         <section id="view-cpr-success" class="card-view hidden">
