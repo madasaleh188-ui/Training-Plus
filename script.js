@@ -19,7 +19,6 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 let currentUserData = null;
-let currentAuthMode = "login";
 let studentList = [];
 
 // Monitor Firebase Auth State (Auto-Remembers Logged In Users)
@@ -64,110 +63,6 @@ async function signInWithGoogle() {
     }
 }
 
-// ==========================================
-// 3. AUTHENTICATION HANDLERS
-// ==========================================
-let currentAuthMode = 'login';
-
-function switchAuthTab(mode) {
-    currentAuthMode = mode;
-
-    const loginTab = document.getElementById('tab-login');
-    const registerTab = document.getElementById('tab-register');
-    const usernameGroup = document.getElementById('username-group');
-    const submitBtn = document.getElementById('btn-auth-submit');
-    const passwordRules = document.getElementById('password-rules');
-
-    if (mode === 'register') {
-        loginTab?.classList.remove('active');
-        registerTab?.classList.add('active');
-        
-        // Show Username field and Password Rules
-        usernameGroup?.classList.remove('hidden');
-        passwordRules?.classList.remove('hidden');
-        
-        if (submitBtn) submitBtn.innerText = "Create Account";
-    } else {
-        registerTab?.classList.remove('active');
-        loginTab?.classList.add('active');
-        
-        // Hide Username field and Password Rules
-        usernameGroup?.classList.add('hidden');
-        passwordRules?.classList.add('hidden');
-        
-        if (submitBtn) submitBtn.innerText = "Sign In";
-    }
-}
-
-function validatePasswordRules() {
-    if (currentAuthMode !== 'register') return;
-    const val = document.getElementById('auth-password').value;
-
-    updateRuleState('rule-length', val.length >= 8, "Minimum 8 characters");
-    updateRuleState('rule-upper', /[A-Z]/.test(val), "At least one uppercase letter (A-Z)");
-    updateRuleState('rule-lower', /[a-z]/.test(val), "At least one lowercase letter (a-z)");
-    updateRuleState('rule-number', /\d/.test(val), "At least one number (0-9)");
-}
-
-function updateRuleState(id, isValid, labelText) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.innerText = (isValid ? "✓ " : "✖ ") + labelText;
-        el.classList.toggle('valid', isValid);
-    }
-}
-
-// FORM SUBMISSION HANDLER
-document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
-    // PREVENT PAGE REFRESH
-    e.preventDefault();
-
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value.trim();
-    const usernameInput = document.getElementById('auth-username');
-    const username = usernameInput ? usernameInput.value.trim() : "";
-
-    if (currentAuthMode === 'register') {
-        // Validation for Account Creation
-        const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-        if (!regex.test(password)) {
-            alert("Password must be at least 8 characters long and contain uppercase, lowercase, and a number.");
-            return;
-        }
-
-        try {
-            const userCred = await auth.createUserWithEmailAndPassword(email, password);
-            if (username && userCred.user) {
-                await userCred.user.updateProfile({ displayName: username });
-            }
-            alert("Account created successfully!");
-        } catch (err) {
-            console.error("Create Account Error:", err);
-            if (err.code === 'auth/email-already-in-use') {
-                alert("This email is already in use. Please sign in instead.");
-            } else if (err.code === 'auth/operation-not-allowed') {
-                alert("Email/Password Sign-In is not enabled in Firebase Console.");
-            } else {
-                alert("Registration failed: " + err.message);
-            }
-        }
-    } else {
-        // Sign In Mode
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-            alert("Signed in successfully!");
-        } catch (err) {
-            console.error("Sign In Error:", err);
-            if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-                alert("Incorrect email or password. Please try again.");
-            } else if (err.code === 'auth/invalid-email') {
-                alert("Please enter a valid email address.");
-            } else {
-                alert("Sign-In failed: " + err.message);
-            }
-        }
-    }
-});
 
 function updateUserUI(isLoggedIn) {
     document.getElementById('search-box')?.classList.toggle('hidden', !isLoggedIn);
@@ -436,22 +331,6 @@ async function addCourseToStudent(studentId) {
     } catch (err) {
         console.error("Error adding course:", err);
         alert("Error adding course: " + err.message);
-    }
-}
-
-async function removeCourse(studentId, courseIndex) {
-    try {
-        const studentDoc = await db.collection('students').doc(studentId).get();
-        const currentData = studentDoc.data();
-        let existingCourses = currentData.courses || [];
-
-        existingCourses.splice(courseIndex, 1);
-
-        await db.collection('students').doc(studentId).update({
-            courses: existingCourses
-        });
-    } catch (err) {
-        alert("Failed to remove course: " + err.message);
     }
 }
 
