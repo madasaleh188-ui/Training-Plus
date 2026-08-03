@@ -50,6 +50,7 @@ async function signInWithGoogle() {
 
 function updateUserUI(isLoggedIn) {
     document.getElementById('search-box')?.classList.toggle('hidden', !isLoggedIn);
+    document.getElementById('download-all-btn')?.classList.toggle('hidden', !isLoggedIn);
     document.getElementById('account-btn')?.classList.toggle('hidden', !isLoggedIn);
     document.getElementById('logout-btn')?.classList.toggle('hidden', !isLoggedIn);
 
@@ -58,7 +59,6 @@ function updateUserUI(isLoggedIn) {
         const nameEl = document.getElementById('modal-username');
         const emailEl = document.getElementById('modal-email');
 
-        // Simple User ID format (takes the first 6 characters of the UID)
         const simpleUserId = currentUserData.uid 
             ? `#USR-${currentUserData.uid.substring(0, 6).toUpperCase()}`
             : '#10001';
@@ -67,7 +67,6 @@ function updateUserUI(isLoggedIn) {
         if (nameEl) nameEl.innerText = currentUserData.displayName || currentUserData.email?.split('@')[0] || "User";
         if (emailEl) emailEl.innerText = currentUserData.email || '';
 
-        // Redirect logged-in user to directory
         showView('view-home');
     } else {
         showView('view-auth');
@@ -120,7 +119,7 @@ function resetAndAddAnotherCPR() {
 }
 
 // ==========================================
-// 4. STUDENT DIRECTORY & SEARCH
+// 4. STUDENT DIRECTORY & DOWNLOADS
 // ==========================================
 function listenToStudentDirectory() {
     if (!currentUserData) return;
@@ -150,6 +149,68 @@ function handleSearch() {
         (s.cpr && s.cpr.includes(q))
     );
     renderStudentDirectory(filtered);
+}
+
+// DOWNLOAD ALL STUDENTS DATA (JSON File)
+function downloadAllStudentsData() {
+    if (studentList.length === 0) {
+        alert("No student data available to download.");
+        return;
+    }
+
+    // Prepare clear JSON data excluding heavy raw base64 data for cleaner file size
+    const exportData = studentList.map(({ cvUrl, ...rest }) => ({
+        ...rest,
+        hasCvUploaded: !!cvUrl
+    }));
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `All_Students_Data_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+}
+
+// DOWNLOAD SINGLE STUDENT DATA (Text Document)
+function downloadSingleStudentData(studentId) {
+    const student = studentList.find(s => s.id === studentId);
+    if (!student) {
+        alert("Student data not found.");
+        return;
+    }
+
+    let coursesFormatted = "None";
+    if (student.courses && Array.isArray(student.courses) && student.courses.length > 0) {
+        coursesFormatted = student.courses.map(c => `- ${c.name} (Added: ${c.addedAt})`).join('\n');
+    }
+
+    const content = `====================================
+STUDENT RECORD: ${student.name || 'Unnamed'}
+====================================
+Full Name : ${student.name || 'N/A'}
+CPR Number: ${student.cpr || 'N/A'}
+Gender    : ${student.gender || 'N/A'}
+Email     : ${student.email || 'N/A'}
+Added By  : ${student.added_by || 'N/A'}
+CV Upload : ${student.cvUrl ? 'Uploaded (' + (student.cvName || 'Document') + ')' : 'No CV Uploaded'}
+
+------------------------------------
+ENROLLED COURSES:
+------------------------------------
+${coursesFormatted}
+====================================
+`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Student_${student.cpr || studentId}.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 function renderStudentDirectory(list) {
@@ -201,14 +262,15 @@ function renderStudentDirectory(list) {
                </div>`
             : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
 
-        // Render student card HTML
+        // Render student card HTML with new Download Record button beside Delete Student
         item.innerHTML = `
             <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
                 <span>${student.name} (${student.cpr})</span>
                 <svg class="arrow-icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
             <div class="student-details hidden">
-                <div class="student-actions-wrapper">
+                <div class="student-actions-wrapper" style="display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 12px;">
+                    <button class="nav-btn" onclick="downloadSingleStudentData('${student.id}')" style="background: #edf2f7; border: 1px solid #cbd5e0; color: #2d3748; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem;">Download Record</button>
                     <button class="delete-icon-btn" onclick="deleteStudent('${student.id}')">Delete Student</button>
                 </div>
                 
