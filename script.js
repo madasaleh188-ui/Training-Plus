@@ -37,6 +37,17 @@ auth.onAuthStateChanged((user) => {
 // ==========================================
 // 2. USER UI & AUTH UPDATES
 // ==========================================
+// Google Sign-In Handler
+async function signInWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+        await auth.signInWithPopup(provider);
+    } catch (error) {
+        console.error("Google Sign-In Error:", error);
+        alert("Sign-In Failed: " + error.message);
+    }
+}
+
 function updateUserUI(isLoggedIn) {
     document.getElementById('search-box')?.classList.toggle('hidden', !isLoggedIn);
     document.getElementById('account-btn')?.classList.toggle('hidden', !isLoggedIn);
