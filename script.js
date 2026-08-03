@@ -81,14 +81,20 @@ function switchAuthTab(mode) {
     if (mode === 'register') {
         loginTab?.classList.remove('active');
         registerTab?.classList.add('active');
+        
+        // Show Username field and Password Rules
         usernameGroup?.classList.remove('hidden');
         passwordRules?.classList.remove('hidden');
+        
         if (submitBtn) submitBtn.innerText = "Create Account";
     } else {
         registerTab?.classList.remove('active');
         loginTab?.classList.add('active');
+        
+        // Hide Username field and Password Rules
         usernameGroup?.classList.add('hidden');
         passwordRules?.classList.add('hidden');
+        
         if (submitBtn) submitBtn.innerText = "Sign In";
     }
 }
@@ -113,18 +119,19 @@ function updateRuleState(id, isValid, labelText) {
 
 // FORM SUBMISSION HANDLER
 document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
+    // PREVENT PAGE REFRESH
     e.preventDefault();
-    
+
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value.trim();
     const usernameInput = document.getElementById('auth-username');
     const username = usernameInput ? usernameInput.value.trim() : "";
 
     if (currentAuthMode === 'register') {
-        // Enforce strong password rules
+        // Validation for Account Creation
         const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
         if (!regex.test(password)) {
-            alert("Password must be at least 8 characters with uppercase, lowercase, and a number.");
+            alert("Password must be at least 8 characters long and contain uppercase, lowercase, and a number.");
             return;
         }
 
@@ -135,30 +142,28 @@ document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
             }
             alert("Account created successfully!");
         } catch (err) {
-            console.error("Registration Error:", err);
-            if (err.code === 'auth/operation-not-allowed') {
-                alert("Email/Password Sign-In is not enabled in Firebase Console! Please turn it on under Authentication -> Sign-in method.");
-            } else if (err.code === 'auth/email-already-in-use') {
-                alert("This email address is already registered. Try signing in.");
+            console.error("Create Account Error:", err);
+            if (err.code === 'auth/email-already-in-use') {
+                alert("This email is already in use. Please sign in instead.");
+            } else if (err.code === 'auth/operation-not-allowed') {
+                alert("Email/Password Sign-In is not enabled in Firebase Console.");
             } else {
                 alert("Registration failed: " + err.message);
             }
         }
     } else {
-        // LOGIN MODE
+        // Sign In Mode
         try {
             await auth.signInWithEmailAndPassword(email, password);
             alert("Signed in successfully!");
         } catch (err) {
-            console.error("Login Error:", err);
-            if (err.code === 'auth/operation-not-allowed') {
-                alert("Email/Password Sign-In is not enabled in Firebase Console! Please turn it on under Authentication -> Sign-in method.");
-            } else if (err.code === 'auth/user-not-found') {
-                alert("No account found with this email.");
-            } else if (err.code === 'auth/wrong-password') {
-                alert("Incorrect password.");
+            console.error("Sign In Error:", err);
+            if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                alert("Incorrect email or password. Please try again.");
+            } else if (err.code === 'auth/invalid-email') {
+                alert("Please enter a valid email address.");
             } else {
-                alert("Login failed: " + err.message);
+                alert("Sign-In failed: " + err.message);
             }
         }
     }
