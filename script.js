@@ -2,13 +2,13 @@
 // 1. FIREBASE CONFIGURATION
 // ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyCzTs_zw28wkHij4Jj9-EEW3XOpQ5si2yc",
-  authDomain: "training-plus-212a2.firebaseapp.com",
-  projectId: "training-plus-212a2",
-  storageBucket: "training-plus-212a2.firebasestorage.app",
-  messagingSenderId: "330136803727",
-  appId: "1:330136803727:web:3013a358a547a112ff93fa",
-  measurementId: "G-FX3XRSLD8W"
+    apiKey: "AIzaSyCzTs_zw28wkHij4Jj9-EEW3XOpQ5si2yc",
+    authDomain: "training-plus-212a2.firebaseapp.com",
+    projectId: "training-plus-212a2",
+    storageBucket: "training-plus-212a2.firebasestorage.app",
+    messagingSenderId: "330136803727",
+    appId: "1:330136803727:web:3013a358a547a112ff93fa",
+    measurementId: "G-FX3XRSLD8W"
 };
 
 // Initialize Firebase (Compat SDK)
@@ -26,18 +26,16 @@ auth.onAuthStateChanged((user) => {
     if (user) {
         currentUserData = user;
         updateUserUI(true);
-        showView('view-home');
         listenToStudentDirectory();
         listenToGroupChat();
     } else {
         currentUserData = null;
         updateUserUI(false);
-        showView('view-auth');
     }
 });
 
 // ==========================================
-// 2. GOOGLE SIGN-IN FUNCTION
+// 2. GOOGLE SIGN-IN & AUTH FUNCTIONS
 // ==========================================
 async function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -63,7 +61,6 @@ async function signInWithGoogle() {
     }
 }
 
-
 function updateUserUI(isLoggedIn) {
     document.getElementById('search-box')?.classList.toggle('hidden', !isLoggedIn);
     document.getElementById('account-btn')?.classList.toggle('hidden', !isLoggedIn);
@@ -77,6 +74,11 @@ function updateUserUI(isLoggedIn) {
         if (idEl) idEl.innerText = currentUserData.uid || '';
         if (nameEl) nameEl.innerText = currentUserData.displayName || "User";
         if (emailEl) emailEl.innerText = currentUserData.email || '';
+
+        // Automatically send logged-in users straight to the directory view
+        showView('view-home');
+    } else {
+        showView('view-auth');
     }
 }
 
@@ -85,7 +87,7 @@ function logoutUser() {
 }
 
 // ==========================================
-// 4. CPR RECORD MANAGEMENT
+// 3. CPR RECORD MANAGEMENT
 // ==========================================
 async function addStudentCPR() {
     const cpr = document.getElementById('cpr-input').value.trim();
@@ -126,7 +128,7 @@ function resetAndAddAnotherCPR() {
 }
 
 // ==========================================
-// 5. STUDENT DIRECTORY & SEARCH
+// 4. STUDENT DIRECTORY & SEARCH
 // ==========================================
 function listenToStudentDirectory() {
     if (!currentUserData) return;
@@ -172,11 +174,11 @@ function renderStudentDirectory(list) {
         const item = document.createElement('div');
         item.className = "student-item";
 
-        // 1. Build list of enrolled courses with timestamp AND styled Delete Course button
+        // 1. Build list of enrolled courses with timestamp and Delete Course button
         let coursesHTML = "";
         if (student.courses && Array.isArray(student.courses) && student.courses.length > 0) {
             coursesHTML = student.courses.map((c, index) => `
-                <li style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:8px 12px; border: 1px solid #e2e8f0; border-radius:6px; margin-bottom:6px; font-size:0.88rem;">
+                <li style="display:flex; justify-space-between; align-items:center; background:#f8fafc; padding:8px 12px; border: 1px solid #e2e8f0; border-radius:6px; margin-bottom:6px; font-size:0.88rem;">
                     <div>
                         <strong style="color: #2d3748;">${c.name}</strong> 
                         <span style="color:#718096; margin-left:8px; font-size:0.80rem;">(${c.addedAt})</span>
@@ -194,20 +196,19 @@ function renderStudentDirectory(list) {
             coursesHTML = `<p style="font-size:0.82rem; color:#a0aec0; margin-top:4px;">No courses added yet.</p>`;
         }
 
-        // 2. Build CV status link
-        // Build CV status link with a Delete CV button beside it
-const cvDisplay = student.cvUrl 
-    ? `<div style="display: flex; align-items: center; gap: 8px;">
-        <a href="${student.cvUrl}" download="${student.cvName || 'Student_CV'}" target="_blank" style="color:var(--accent-slate-blue); font-weight:600; text-decoration:underline; font-size:0.85rem;">📄 View / Download CV</a>
-        <button type="button" onclick="deleteStudentCV('${student.id}')" 
-            style="background: #fff5f5; border: 1px solid #feb2b2; color: #e53e3e; cursor: pointer; font-size: 0.75rem; padding: 4px 10px; border-radius: 100px; transition: all 0.2s;" 
-            onmouseover="this.style.background='#fee2e2'" 
-            onmouseout="this.style.background='#fff5f5'"
-        >
-            Delete CV
-        </button>
-       </div>`
-    : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
+        // 2. Build CV status link with Delete CV button
+        const cvDisplay = student.cvUrl 
+            ? `<div style="display: flex; align-items: center; gap: 8px;">
+                <a href="${student.cvUrl}" download="${student.cvName || 'Student_CV'}" target="_blank" style="color:var(--accent-slate-blue, #2b6cb0); font-weight:600; text-decoration:underline; font-size:0.85rem;">📄 View / Download CV</a>
+                <button type="button" onclick="deleteStudentCV('${student.id}')" 
+                    style="background: #fff5f5; border: 1px solid #feb2b2; color: #e53e3e; cursor: pointer; font-size: 0.75rem; padding: 4px 10px; border-radius: 100px; transition: all 0.2s;" 
+                    onmouseover="this.style.background='#fee2e2'" 
+                    onmouseout="this.style.background='#fff5f5'"
+                >
+                    Delete CV
+                </button>
+               </div>`
+            : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
 
         // 3. Render complete student card HTML
         item.innerHTML = `
@@ -239,11 +240,11 @@ const cvDisplay = student.cvUrl
                     </label>
                 </div>
 
-                <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border-color);">
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border-color, #e2e8f0);">
 
                 <!-- CV UPLOAD SECTION -->
                 <div style="margin-bottom: 16px;">
-                    <h4 style="margin-bottom: 8px; color: var(--accent-slate-blue);">Student CV Document</h4>
+                    <h4 style="margin-bottom: 8px; color: var(--accent-slate-blue, #2b6cb0);">Student CV Document</h4>
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <input type="file" id="cv-input-${student.id}" accept=".pdf,.doc,.docx" style="font-size: 0.85rem;">
                         <button type="button" class="primary-btn" onclick="uploadStudentCV('${student.id}')" style="padding: 6px 12px; font-size: 0.85rem;">Upload CV</button>
@@ -251,13 +252,13 @@ const cvDisplay = student.cvUrl
                     </div>
                 </div>
 
-                <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border-color);">
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border-color, #e2e8f0);">
 
                 <!-- ENROLLED COURSES SECTION -->
                 <div>
-                    <h4 style="margin-bottom: 8px; color: var(--accent-slate-blue);">Enrolled Courses</h4>
+                    <h4 style="margin-bottom: 8px; color: var(--accent-slate-blue, #2b6cb0);">Enrolled Courses</h4>
                     <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                        <input type="text" id="course-input-${student.id}" placeholder="Enter course name (e.g. Web Development)" style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.85rem;">
+                        <input type="text" id="course-input-${student.id}" placeholder="Enter course name (e.g. Web Development)" style="flex: 1; padding: 8px; border: 1px solid var(--border-color, #e2e8f0); border-radius: 6px; font-size: 0.85rem;">
                         <button type="button" class="primary-btn" onclick="addCourseToStudent('${student.id}')" style="padding: 6px 14px; font-size: 0.85rem;">+ Add Course</button>
                     </div>
                     
@@ -270,6 +271,7 @@ const cvDisplay = student.cvUrl
         container.appendChild(item);
     });
 }
+
 async function updateStudentField(id, field, value) {
     await db.collection('students').doc(id).update({ [field]: value });
 }
@@ -281,7 +283,7 @@ async function deleteStudent(id) {
 }
 
 // ==========================================
-// 6. COURSE MANAGEMENT (WITH TIMESTAMP)
+// 5. COURSE MANAGEMENT (WITH TIMESTAMP)
 // ==========================================
 async function addCourseToStudent(studentId) {
     const inputEl = document.getElementById(`course-input-${studentId}`);
@@ -311,8 +313,6 @@ async function addCourseToStudent(studentId) {
 
     try {
         const studentRef = db.collection('students').doc(studentId);
-        
-        // Use arrayUnion or fetch and update safely
         const docSnap = await studentRef.get();
         if (!docSnap.exists) {
             alert("Student document not found.");
@@ -334,11 +334,33 @@ async function addCourseToStudent(studentId) {
     }
 }
 
+async function removeCourse(studentId, courseIndex) {
+    if (!confirm("Are you sure you want to delete this course?")) return;
+
+    try {
+        const studentRef = db.collection('students').doc(studentId);
+        const docSnap = await studentRef.get();
+
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            let existingCourses = Array.isArray(data.courses) ? data.courses : [];
+
+            existingCourses.splice(courseIndex, 1);
+
+            await studentRef.update({
+                courses: existingCourses
+            });
+        }
+    } catch (err) {
+        console.error("Error removing course:", err);
+        alert("Failed to delete course: " + err.message);
+    }
+}
+
 // ==========================================
-// 7. CV UPLOAD FUNCTION (FIREBASE STORAGE)
+// 6. CV UPLOAD & DELETE (BASE64 FIRESTORE)
 // ==========================================
 async function uploadStudentCV(studentId) {
-    // Notice the updated ID matching: cv-input-${studentId}
     const fileInput = document.getElementById(`cv-input-${studentId}`);
     
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
@@ -348,7 +370,6 @@ async function uploadStudentCV(studentId) {
 
     const file = fileInput.files[0];
 
-    // Limit size to ~700KB to fit easily into Firestore documents
     if (file.size > 700 * 1024) {
         alert("File size is too large! Please select a file under 700KB.");
         return;
@@ -360,7 +381,6 @@ async function uploadStudentCV(studentId) {
         const base64String = e.target.result;
 
         try {
-            // Save file as Base64 in Firestore document
             await db.collection('students').doc(studentId).update({
                 cvUrl: base64String,
                 cvName: file.name
@@ -378,11 +398,29 @@ async function uploadStudentCV(studentId) {
         alert("Could not read file!");
     };
 
-    // Read file
     reader.readAsDataURL(file);
 }
+
+async function deleteStudentCV(studentId) {
+    if (!confirm("Are you sure you want to delete this CV?")) return;
+
+    try {
+        const studentRef = db.collection('students').doc(studentId);
+
+        await studentRef.update({
+            cvUrl: firebase.firestore.FieldValue.delete(),
+            cvName: firebase.firestore.FieldValue.delete()
+        });
+
+        alert("CV deleted successfully!");
+    } catch (err) {
+        console.error("Error deleting CV:", err);
+        alert("Failed to delete CV: " + err.message);
+    }
+}
+
 // ==========================================
-// 8. PASSWORD CHANGE
+// 7. PASSWORD CHANGE
 // ==========================================
 async function submitPasswordChange() {
     const newPassword = document.getElementById('new-password-input').value.trim();
@@ -398,7 +436,7 @@ async function submitPasswordChange() {
 }
 
 // ==========================================
-// 9. REAL-TIME GROUP CHAT
+// 8. REAL-TIME GROUP CHAT
 // ==========================================
 function listenToGroupChat() {
     db.collection('chat_messages').orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
@@ -429,11 +467,11 @@ async function sendChatMessage() {
 }
 
 // ==========================================
-// 10. NAVIGATION, MODALS & LIVE CLOCK
+// 9. NAVIGATION, MODALS & LIVE CLOCK
 // ==========================================
 function showView(id) {
     document.querySelectorAll('.card-view').forEach(v => v.classList.add('hidden'));
-    document.getElementById(id).classList.remove('hidden');
+    document.getElementById(id)?.classList.remove('hidden');
 }
 
 function openAccountModal() { document.getElementById('account-modal').classList.remove('hidden'); }
@@ -447,48 +485,6 @@ function runLiveFooterClock() {
             const now = new Date();
             el.innerText = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + " | " + now.toLocaleTimeString();
         }, 1000);
-    }
-}
-
-async function removeCourse(studentId, courseIndex) {
-    if (!confirm("Are you sure you want to delete this course?")) return;
-
-    try {
-        const studentRef = db.collection('students').doc(studentId);
-        const docSnap = await studentRef.get();
-
-        if (docSnap.exists) {
-            const data = docSnap.data();
-            let existingCourses = Array.isArray(data.courses) ? data.courses : [];
-
-            existingCourses.splice(courseIndex, 1);
-
-            await studentRef.update({
-                courses: existingCourses
-            });
-        }
-    } catch (err) {
-        console.error("Error removing course:", err);
-        alert("Failed to delete course: " + err.message);
-    }
-}
-
-async function deleteStudentCV(studentId) {
-    if (!confirm("Are you sure you want to delete this CV?")) return;
-
-    try {
-        const studentRef = db.collection('students').doc(studentId);
-
-        // Remove cvUrl and cvName fields from Firestore
-        await studentRef.update({
-            cvUrl: firebase.firestore.FieldValue.delete(),
-            cvName: firebase.firestore.FieldValue.delete()
-        });
-
-        alert("CV deleted successfully!");
-    } catch (err) {
-        console.error("Error deleting CV:", err);
-        alert("Failed to delete CV: " + err.message);
     }
 }
 
