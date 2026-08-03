@@ -71,28 +71,25 @@ let currentAuthMode = 'login';
 
 function switchAuthTab(mode) {
     currentAuthMode = mode;
-    
-    // Toggle active tabs
-    document.getElementById('tab-login')?.classList.toggle('active', mode === 'login');
-    document.getElementById('tab-register')?.classList.toggle('active', mode === 'register');
-    
-    // Hide/Show password rules
-    document.getElementById('password-rules')?.classList.toggle('hidden', mode === 'login');
-    
-    // Hide Username field in Login mode, show in Register mode
-    const usernameInput = document.getElementById('auth-username');
-    if (usernameInput) {
-        const usernameContainer = usernameInput.closest('label') || usernameInput.parentElement;
-        if (usernameContainer) {
-            usernameContainer.style.display = mode === 'login' ? 'none' : 'block';
-        }
-        usernameInput.required = (mode === 'register');
-    }
 
-    // Change button text
+    const loginTab = document.getElementById('tab-login');
+    const registerTab = document.getElementById('tab-register');
+    const usernameGroup = document.getElementById('username-group');
     const submitBtn = document.getElementById('btn-auth-submit');
-    if (submitBtn) {
-        submitBtn.innerText = mode === 'login' ? 'Sign In' : 'Create Account';
+    const passwordRules = document.getElementById('password-rules');
+
+    if (mode === 'register') {
+        loginTab?.classList.remove('active');
+        registerTab?.classList.add('active');
+        usernameGroup?.classList.remove('hidden');
+        passwordRules?.classList.remove('hidden');
+        if (submitBtn) submitBtn.innerText = "Create Account";
+    } else {
+        registerTab?.classList.remove('active');
+        loginTab?.classList.add('active');
+        usernameGroup?.classList.add('hidden');
+        passwordRules?.classList.add('hidden');
+        if (submitBtn) submitBtn.innerText = "Sign In";
     }
 }
 
