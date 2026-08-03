@@ -472,36 +472,69 @@ async function deleteStudentCV(studentId) {
 }
 
 // ==========================================
-// 7. REAL-TIME GROUP CHAT
+// 7. REAL-TIME GROUP CHAT (FIXED)
 // ==========================================
 function listenToGroupChat() {
-    db.collection('chat_messages').orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
-        const box = document.getElementById('chat-messages');
-        box.innerHTML = "";
-        snapshot.forEach(doc => {
-            const m = doc.data();
-            const div = document.createElement('div');
-            div.className = "chat-msg";
-            div.innerHTML = `<strong>${m.username}:</strong> ${m.message}`;
-            box.appendChild(div);
-        });
-        box.scrollTop = box.scrollHeight;
-    });
+    // Listen for real-time chat updates
+    db.collection('chat_messages')
+      .orderBy('timestamp', 'asc')
+      .limitToLast(50)
+      .onSnapshot((snapshot) => {
+          const box = document.getElementById('chat-messages');
+          if (!box) return;
+
+          box.innerHTML = "";
+
+          snapshot.forEach(doc => {
+              const m = doc.data();
+              const div = document.createElement('div');
+              div.className = "chat-msg";
+              
+              const senderName = m.username || "Anonymous";
+              const textContent = m.message || "";
+
+              div.innerHTML = `<strong>${escapeHTML(senderName)}:</strong> ${escapeHTML(textContent)}`;
+              box.appendChild(div);
+          });
+
+          // Auto scroll to latest message
+          box.scrollTop = box.scrollHeight;
+      }, (error) => {
+          console.error("Chat permission or listener error:", error);
+      });
 }
 
 async function sendChatMessage() {
     const input = document.getElementById('chat-input');
+    if (!input) return;
+
     const message = input.value.trim();
     if (!message || !currentUserData) return;
 
-    await db.collection('chat_messages').add({
-        username: currentUserData.displayName || currentUserData.email,
-        message: message,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    input.value = "";
+    try {
+        const displayName = currentUserData.displayName 
+            || (currentUserData.email ? currentUserData.email.split('@')[0] : "User");
+
+        // Clear input immediately for smooth UX
+        input.value = "";
+
+        await db.collection('chat_messages').add({
+            username: displayName,
+            message: message,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (err) {
+        console.error("Failed to send message:", err);
+        alert("Failed to send message: " + err.message);
+    }
 }
 
+// Helper utility to prevent HTML code injection in chat
+function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+}
 // ==========================================
 // 8. NAVIGATION, MODALS & LIVE CLOCK
 // ==========================================
