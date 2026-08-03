@@ -11,6 +11,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+    <!-- SheetJS for Excel Exports -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -21,8 +24,8 @@
             </div>
         </div>
         <div class="nav-controls">
-            <!-- Added Download All Students Button -->
-            <button id="download-all-btn" class="nav-btn hidden" onclick="downloadAllStudentsData()">Download All</button>
+            <!-- Excel Download All Button -->
+            <button id="download-all-btn" class="nav-btn hidden" onclick="downloadAllStudentsData()">Download All (Excel)</button>
             <button id="account-btn" class="nav-btn hidden" onclick="openAccountModal()">Account</button>
             <button id="logout-btn" class="nav-btn logout-btn hidden" onclick="logoutUser()">Logout</button>
         </div>
