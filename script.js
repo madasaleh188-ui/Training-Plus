@@ -37,7 +37,6 @@ auth.onAuthStateChanged((user) => {
 // ==========================================
 // 2. USER UI & AUTH UPDATES
 // ==========================================
-// Google Sign-In Handler
 async function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
@@ -119,7 +118,7 @@ function resetAndAddAnotherCPR() {
 }
 
 // ==========================================
-// 4. STUDENT DIRECTORY & DOWNLOADS
+// 4. STUDENT DIRECTORY & EXCEL EXPORTS
 // ==========================================
 function listenToStudentDirectory() {
     if (!currentUserData) return;
@@ -151,66 +150,98 @@ function handleSearch() {
     renderStudentDirectory(filtered);
 }
 
-// DOWNLOAD ALL STUDENTS DATA (JSON File)
+// 1. EXCEL EXPORT: ALL STUDENTS DATA
 function downloadAllStudentsData() {
     if (studentList.length === 0) {
         alert("No student data available to download.");
         return;
     }
 
-    // Prepare clear JSON data excluding heavy raw base64 data for cleaner file size
-    const exportData = studentList.map(({ cvUrl, ...rest }) => ({
-        ...rest,
-        hasCvUploaded: !!cvUrl
-    }));
-
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `All_Students_Data_${new Date().toISOString().slice(0, 10)}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-}
-
-// DOWNLOAD SINGLE STUDENT DATA (Text Document)
-function downloadSingleStudentData(studentId) {
-    const student = studentList.find(s => s.id === studentId);
-    if (!student) {
-        alert("Student data not found.");
+    if (typeof XLSX === 'undefined') {
+        alert("Excel export library is loading, please try again in a second.");
         return;
     }
 
-    let coursesFormatted = "None";
-    if (student.courses && Array.isArray(student.courses) && student.courses.length > 0) {
-        coursesFormatted = student.courses.map(c => `- ${c.name} (Added: ${c.addedAt})`).join('\n');
+    // Sheet 1: Main Student Summary
+    const studentsRows = studentList.map(s => {
+        const courseNames = Array.isArray(s.courses) ? s.courses.map(c => c.name).join(', ') : 'None';
+        return {
+            "Full Name": s.name || '',
+            "CPR": s.cpr || '',
+            "Gender": s.gender || '',
+            "Email": s.email || '',
+            "Enrolled Courses": courseNames,
+            "CV Status": s.cvUrl ? 'Uploaded' : 'No CV',
+            "Added By": s.added_by || ''
+        };
+    });
+
+    // Sheet 2: Detailed Course Records
+    const courseRows = [];
+    studentList.forEach(s => {
+        if (Array.isArray(s.courses) && s.courses.length > 0) {
+            s.courses.forEach(c => {
+                courseRows.push({
+                    "Student Name": s.name || '',
+                    "CPR": s.cpr || '',
+                    "Course Name": c.name || '',
+                    "Date Added": c.addedAt || ''
+                });
+            });
+        }
+    });
+
+    const wb = XLSX.utils.book_new();
+    const wsStudents = XLSX.utils.json_to_sheet(studentsRows);
+    XLSX.utils.book_append_sheet(wb, wsStudents, "All Students");
+
+    if (courseRows.length > 0) {
+        const wsCourses = XLSX.utils.json_to_sheet(courseRows);
+        XLSX.utils.book_append_sheet(wb, wsCourses, "Course Details");
     }
 
-    const content = `====================================
-STUDENT RECORD: ${student.name || 'Unnamed'}
-====================================
-Full Name : ${student.name || 'N/A'}
-CPR Number: ${student.cpr || 'N/A'}
-Gender    : ${student.gender || 'N/A'}
-Email     : ${student.email || 'N/A'}
-Added By  : ${student.added_by || 'N/A'}
-CV Upload : ${student.cvUrl ? 'Uploaded (' + (student.cvName || 'Document') + ')' : 'No CV Uploaded'}
+    const todayStr = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `All_Students_Data_${todayStr}.xlsx`);
+}
 
-------------------------------------
-ENROLLED COURSES:
-------------------------------------
-${coursesFormatted}
-====================================
-`;
+// 2. EXCEL EXPORT: SINGLE STUDENT RECORD
+function downloadSingleStudentData(studentId) {
+    const student = studentList.find(s => s.id === studentId);
+    if (!student) {
+        alert("Student record not found.");
+        return;
+    }
 
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Student_${student.cpr || studentId}.txt`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (typeof XLSX === 'undefined') {
+        alert("Excel export library is loading, please try again in a second.");
+        return;
+    }
+
+    const recordRows = [
+        ["STUDENT RECORD INFORMATION", ""],
+        ["Full Name", student.name || 'N/A'],
+        ["CPR", student.cpr || 'N/A'],
+        ["Gender", student.gender || 'N/A'],
+        ["Email", student.email || 'N/A'],
+        ["Added By", student.added_by || 'N/A'],
+        ["CV Upload Status", student.cvUrl ? `Uploaded (${student.cvName || 'File'})` : 'No CV Uploaded'],
+        ["", ""],
+        ["ENROLLED COURSES", "ADDED DATE"]
+    ];
+
+    if (Array.isArray(student.courses) && student.courses.length > 0) {
+        student.courses.forEach(c => {
+            recordRows.push([c.name, c.addedAt || '']);
+        });
+    } else {
+        recordRows.push(["No courses enrolled", ""]);
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(recordRows);
+    XLSX.utils.book_append_sheet(wb, ws, "Student Details");
+
+    XLSX.writeFile(wb, `Student_${student.cpr || studentId}.xlsx`);
 }
 
 function renderStudentDirectory(list) {
@@ -262,7 +293,7 @@ function renderStudentDirectory(list) {
                </div>`
             : `<span style="color:#a0aec0; font-size:0.85rem;">No CV uploaded</span>`;
 
-        // Render student card HTML with new Download Record button beside Delete Student
+        // Render card
         item.innerHTML = `
             <div class="student-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
                 <span>${student.name} (${student.cpr})</span>
@@ -270,7 +301,7 @@ function renderStudentDirectory(list) {
             </div>
             <div class="student-details hidden">
                 <div class="student-actions-wrapper" style="display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 12px;">
-                    <button class="nav-btn" onclick="downloadSingleStudentData('${student.id}')" style="background: #edf2f7; border: 1px solid #cbd5e0; color: #2d3748; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem;">Download Record</button>
+                    <button class="nav-btn" onclick="downloadSingleStudentData('${student.id}')" style="background: #edf2f7; border: 1px solid #cbd5e0; color: #2d3748; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem;">Download Excel</button>
                     <button class="delete-icon-btn" onclick="deleteStudent('${student.id}')">Delete Student</button>
                 </div>
                 
